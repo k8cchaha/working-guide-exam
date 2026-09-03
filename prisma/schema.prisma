@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+model Exam {
+  id           String      @id @default(cuid())
+  passingScore Int
+  status       ExamStatus  @default(ACTIVE)
+  publishedAt  DateTime?
+  createdAt    DateTime    @default(now())
+  members      Member[]
+  submissions  Submission[]
+}
+
+model Member {
+  id         String      @id @default(cuid())
+  examId     String
+  name       String
+  exam       Exam        @relation(fields: [examId], references: [id], onDelete: Cascade)
+  submission Submission?
+
+  @@unique([examId, name])
+}
+
+model Submission {
+  id          String   @id @default(cuid())
+  examId      String
+  memberId    String   @unique
+  answers     Json
+  autoScore   Int      @default(0)
+  manualScore Int?
+  totalScore  Int?
+  avatarId    String
+  submittedAt DateTime @default(now())
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  exam        Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+}
+
+enum ExamStatus {
+  ACTIVE
+  PUBLISHED
+}
