@@ -100,37 +100,32 @@ export async function saveListAction(
     where: { adminUsername_name: { adminUsername: session.username, name: listName.trim() } },
   })
 
+  const memberData = members.map((m) => ({
+    name: m.name.trim(),
+    password: m.password?.trim() || null,
+  }))
+
+  let saved
   if (existing) {
     await prisma.savedListMember.deleteMany({ where: { savedListId: existing.id } })
-    await prisma.savedList.update({
+    saved = await prisma.savedList.update({
       where: { id: existing.id },
-      data: {
-        authMode,
-        members: {
-          create: members.map((m) => ({
-            name: m.name.trim(),
-            password: m.password?.trim() || null,
-          })),
-        },
-      },
+      data: { authMode, members: { create: memberData } },
+      include: { members: { select: { name: true, password: true } } },
     })
   } else {
-    await prisma.savedList.create({
+    saved = await prisma.savedList.create({
       data: {
         adminUsername: session.username,
         name: listName.trim(),
         authMode,
-        members: {
-          create: members.map((m) => ({
-            name: m.name.trim(),
-            password: m.password?.trim() || null,
-          })),
-        },
+        members: { create: memberData },
       },
+      include: { members: { select: { name: true, password: true } } },
     })
   }
 
-  return { ok: true }
+  return { ok: true, list: { id: saved.id, name: saved.name, authMode: saved.authMode, members: saved.members } }
 }
 
 export async function deleteSavedListAction(savedListId: string) {

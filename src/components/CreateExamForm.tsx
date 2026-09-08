@@ -87,10 +87,16 @@ export default function CreateExamForm({ savedLists: initialLists }: Props) {
     setSaveMsg('')
     const result = await saveListAction(listName.trim(), mode, members)
     if (result?.error) { setSaveMsg(result.error); return }
+    if (result?.list) {
+      setLists((prev) => {
+        const idx = prev.findIndex((l) => l.id === result.list!.id)
+        return idx >= 0
+          ? prev.map((l) => (l.id === result.list!.id ? result.list! : l))
+          : [result.list!, ...prev]
+      })
+    }
     setSaveMsg('✓ 已儲存')
     setListName('')
-    router.refresh()
-    // Re-fetch lists optimistically
     setTimeout(() => { setShowSave(false); setSaveMsg('') }, 1200)
   }
 
