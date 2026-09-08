@@ -108,6 +108,19 @@ export default function CreateExamForm({ savedLists: initialLists }: Props) {
 
   const canEdit = mode === 'NAME_ONLY' || mode === 'NAME_PASSWORD'
 
+  // NAME_ONLY: at least one non-blank name
+  // NAME_PASSWORD: at least one named row, and every named row has a password
+  const canSaveList = (() => {
+    if (mode === 'NAME_ONLY') {
+      return nameText.split('\n').some((n) => n.trim())
+    }
+    if (mode === 'NAME_PASSWORD') {
+      const namedRows = rows.filter((r) => r.name.trim())
+      return namedRows.length > 0 && namedRows.every((r) => r.password.trim())
+    }
+    return false
+  })()
+
   return (
     <div className="space-y-5">
       {/* 合格分數 */}
@@ -132,7 +145,7 @@ export default function CreateExamForm({ savedLists: initialLists }: Props) {
           onChange={(e) => { setMode(e.target.value as AuthMode); setError(''); setShowSave(false) }}
           className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
         >
-          <option value="NAME_ONLY">只有名稱清單</option>
+          <option value="NAME_ONLY">名稱清單</option>
           <option value="NAME_PASSWORD">名稱清單 + 密碼</option>
           <option value="GOOGLE">綁定 Google 帳號（即將推出）</option>
           <option value="SAVED_LIST">使用常用清單</option>
@@ -226,7 +239,7 @@ export default function CreateExamForm({ savedLists: initialLists }: Props) {
         <div>
           <p className="text-sm font-medium text-gray-700 mb-2">選擇常用清單</p>
           {lists.length === 0 ? (
-            <p className="text-sm text-gray-400">尚無常用清單，請先在「只有名稱清單」或「名稱清單 + 密碼」模式下建立。</p>
+            <p className="text-sm text-gray-400">尚無常用清單，請先在「名稱清單」或「名稱清單 + 密碼」模式下建立。</p>
           ) : (
             <div className="space-y-2">
               {lists.map((list) => (
@@ -272,7 +285,8 @@ export default function CreateExamForm({ savedLists: initialLists }: Props) {
             <button
               type="button"
               onClick={() => setShowSave(true)}
-              className="text-sm text-indigo-600 hover:underline"
+              disabled={!canSaveList}
+              className="text-sm text-indigo-600 hover:underline disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
             >
               📌 儲存至常用清單
             </button>
@@ -287,7 +301,8 @@ export default function CreateExamForm({ savedLists: initialLists }: Props) {
               <button
                 type="button"
                 onClick={handleSaveList}
-                className="text-sm bg-indigo-600 text-white px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition"
+                disabled={!canSaveList || !listName.trim()}
+                className="text-sm bg-indigo-600 text-white px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 確認儲存
               </button>
