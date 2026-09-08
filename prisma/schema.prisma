@@ -9,19 +9,22 @@ datasource db {
 }
 
 model Exam {
-  id           String      @id @default(cuid())
-  passingScore Int
-  status       ExamStatus  @default(ACTIVE)
-  publishedAt  DateTime?
-  createdAt    DateTime    @default(now())
-  members      Member[]
-  submissions  Submission[]
+  id            String       @id @default(cuid())
+  adminUsername String       @default("")
+  authMode      String       @default("NAME_ONLY")
+  passingScore  Int
+  status        ExamStatus   @default(ACTIVE)
+  publishedAt   DateTime?
+  createdAt     DateTime     @default(now())
+  members       Member[]
+  submissions   Submission[]
 }
 
 model Member {
   id         String      @id @default(cuid())
   examId     String
   name       String
+  password   String?
   exam       Exam        @relation(fields: [examId], references: [id], onDelete: Cascade)
   submission Submission?
 
@@ -40,6 +43,27 @@ model Submission {
   submittedAt DateTime @default(now())
   member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
   exam        Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+}
+
+model SavedList {
+  id            String            @id @default(cuid())
+  adminUsername String
+  name          String
+  authMode      String            @default("NAME_ONLY")
+  createdAt     DateTime          @default(now())
+  members       SavedListMember[]
+
+  @@unique([adminUsername, name])
+}
+
+model SavedListMember {
+  id          String    @id @default(cuid())
+  savedListId String
+  name        String
+  password    String?
+  savedList   SavedList @relation(fields: [savedListId], references: [id], onDelete: Cascade)
+
+  @@unique([savedListId, name])
 }
 
 enum ExamStatus {

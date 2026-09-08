@@ -3,19 +3,23 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AVATARS } from '@/lib/avatars'
+import { startExamAction } from '@/actions/exam'
 
 interface Member { id: string; name: string }
-
 interface Props {
   examId: string
   members: Member[]
   examStatus: string
+  authMode: string
 }
 
-export default function EntryClient({ examId, members, examStatus }: Props) {
+export default function EntryClient({ examId, members, examStatus, authMode }: Props) {
   const router = useRouter()
   const [selectedMemberId, setSelectedMemberId] = useState('')
   const [selectedAvatar, setSelectedAvatar] = useState('')
+  const [password, setPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [starting, setStarting] = useState(false)
   const [alreadySubmitted, setAlreadySubmitted] = useState(false)
 
   useEffect(() => {
@@ -62,14 +66,49 @@ export default function EntryClient({ examId, members, examStatus }: Props) {
     )
   }
 
-  function handleStart() {
+  async function handleStart() {
     if (!selectedMemberId || !selectedAvatar) return
+    if (authMode === 'NAME_PASSWORD' && !password.trim()) {
+      setPasswordError('請輸入密碼')
+      return
+    }
+    setStarting(true)
+    setPasswordError('')
+
+    const result = await startExamAction(
+      examId,
+      selectedMemberId,
+      selectedAvatar,
+      authMode === 'NAME_PASSWORD' ? password : undefined
+    )
+
+    if ('error' in result && result.error) {
+      if (result.error === 'already_submitted') {
+        localStorage.setItem(
+          `exam_${examId}`,
+          JSON.stringify({ memberId: selectedMemberId, avatarId: selectedAvatar, submitted: true })
+        )
+        router.push(`/exam/${examId}/result`)
+        return
+      }
+      if (result.error === '密碼錯誤') {
+        setPasswordError('密碼錯誤，請再試一次')
+        setStarting(false)
+        return
+      }
+      setPasswordError(result.error)
+      setStarting(false)
+      return
+    }
+
     localStorage.setItem(
       `exam_${examId}`,
       JSON.stringify({ memberId: selectedMemberId, avatarId: selectedAvatar, submitted: false })
     )
     router.push(`/exam/${examId}/quiz`)
   }
+
+  const canStart = selectedMemberId && selectedAvatar && (authMode !== 'NAME_PASSWORD' || password.trim())
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -84,17 +123,32 @@ export default function EntryClient({ examId, members, examStatus }: Props) {
           <label className="block text-sm font-medium text-gray-700 mb-1">我是</label>
           <select
             value={selectedMemberId}
-            onChange={(e) => setSelectedMemberId(e.target.value)}
+            onChange={(e) => { setSelectedMemberId(e.target.value); setPasswordError('') }}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
           >
             <option value="">— 請選擇 —</option>
             {members.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
+              <option key={m.id} value={m.id}>{m.name}</option>
             ))}
           </select>
         </div>
+
+        {/* 密碼（NAME_PASSWORD 模式） */}
+        {authMode === 'NAME_PASSWORD' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">密碼</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setPasswordError('') }}
+              placeholder="請輸入 Admin 設定的密碼"
+              className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${
+                passwordError ? 'border-red-400 focus:ring-red-300' : 'border-gray-300 focus:ring-indigo-400'
+              }`}
+            />
+            {passwordError && <p className="text-red-500 text-xs mt-1">{passwordError}</p>}
+          </div>
+        )}
 
         {/* 選 Avatar */}
         <div>
@@ -104,6 +158,7 @@ export default function EntryClient({ examId, members, examStatus }: Props) {
               <button
                 key={a.id}
                 title={a.label}
+                type="button"
                 onClick={() => setSelectedAvatar(a.id)}
                 className={`text-2xl p-1 rounded-lg transition border-2 ${
                   selectedAvatar === a.id
@@ -118,11 +173,12 @@ export default function EntryClient({ examId, members, examStatus }: Props) {
         </div>
 
         <button
+          type="button"
           onClick={handleStart}
-          disabled={!selectedMemberId || !selectedAvatar}
+          disabled={!canStart || starting}
           className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed text-lg"
         >
-          開始測驗 🚀
+          {starting ? '驗證中…' : '開始測驗 🚀'}
         </button>
       </div>
     </div>
