@@ -34,7 +34,7 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white border-b px-6 py-3 flex items-center justify-between">
-        <h1 className="text-lg font-bold text-indigo-700">Jira 測驗系統｜Admin</h1>
+        <h1 className="text-lg font-bold text-indigo-700">測驗系統｜Admin</h1>
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-500">👤 {session.username}</span>
           <form action={logoutAction}>
