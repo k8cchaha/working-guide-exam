@@ -10,7 +10,7 @@ export async function startExamAction(
   password?: string
 ) {
   const exam = await prisma.exam.findUnique({ where: { id: examId } })
-  if (!exam || exam.status === 'PUBLISHED') return { error: '考試不存在或已結束' }
+  if (!exam || exam.status === 'PUBLISHED') return { error: '測驗不存在或已結束' }
 
   const member = await prisma.member.findFirst({
     where: { id: memberId, examId },
@@ -38,7 +38,7 @@ export async function submitAnswersAction(
   if (existing) return { error: 'already_submitted' }
 
   const exam = await prisma.exam.findUnique({ where: { id: examId } })
-  if (!exam || exam.status === 'PUBLISHED') return { error: '考試不存在或已結束' }
+  if (!exam || exam.status === 'PUBLISHED') return { error: '測驗不存在或已結束' }
 
   const autoScore = calculateAutoScore(answers)
   const total = calculateTotal(autoScore, null)

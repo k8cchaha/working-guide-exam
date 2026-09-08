@@ -34,7 +34,7 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white border-b px-6 py-3 flex items-center justify-between">
-        <h1 className="text-lg font-bold text-indigo-700">Jira 考試系統｜Admin</h1>
+        <h1 className="text-lg font-bold text-indigo-700">Jira 測驗系統｜Admin</h1>
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-500">👤 {session.username}</span>
           <form action={logoutAction}>
@@ -45,13 +45,13 @@ export default async function DashboardPage() {
 
       <div className="max-w-4xl mx-auto p-6 space-y-8">
         <section className="bg-white rounded-2xl shadow-sm p-6">
-          <h2 className="text-xl font-semibold mb-4">建立新考試</h2>
+          <h2 className="text-xl font-semibold mb-4">建立新測驗</h2>
           <CreateExamForm savedLists={savedListsData} />
         </section>
 
         {exams.length > 0 && (
           <section className="bg-white rounded-2xl shadow-sm p-6">
-            <h2 className="text-xl font-semibold mb-4">我的考試</h2>
+            <h2 className="text-xl font-semibold mb-4">我的測驗</h2>
             <div className="space-y-3">
               {exams.map((exam) => (
                 <Link
@@ -61,7 +61,7 @@ export default async function DashboardPage() {
                 >
                   <div>
                     <p className="font-medium text-gray-800">
-                      考試 — 合格 {exam.passingScore} 分
+                      測驗 — 合格 {exam.passingScore} 分
                       <span className="ml-2 text-xs text-gray-400">
                         {exam.authMode === 'NAME_PASSWORD' ? '🔑 密碼驗證' : exam.authMode === 'GOOGLE' ? '🔒 Google' : ''}
                       </span>

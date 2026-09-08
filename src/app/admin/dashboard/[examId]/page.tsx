@@ -46,7 +46,7 @@ export default async function ExamDetailPage({
           <Link href="/admin/dashboard" className="text-indigo-600 hover:underline text-sm">
             ← 返回
           </Link>
-          <h1 className="text-lg font-bold text-indigo-700">考試管理</h1>
+          <h1 className="text-lg font-bold text-indigo-700">測驗管理</h1>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-500">👤 {session.username}</span>
@@ -57,10 +57,10 @@ export default async function ExamDetailPage({
       </nav>
 
       <div className="max-w-5xl mx-auto p-6 space-y-6">
-        {/* 考試資訊 + QR Code */}
+        {/* 測驗資訊 + QR Code */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white rounded-2xl shadow-sm p-6 space-y-3">
-            <h2 className="text-lg font-semibold">考試資訊</h2>
+            <h2 className="text-lg font-semibold">測驗資訊</h2>
             <p className="text-sm text-gray-600">合格分數：<strong>{exam.passingScore} 分</strong></p>
             <p className="text-sm text-gray-600">
               狀態：
@@ -78,7 +78,7 @@ export default async function ExamDetailPage({
               已交卷：{exam.members.filter((m: MemberWithSubmission) => m.submission).length} / {exam.members.length} 人
             </p>
             <div className="mt-4">
-              <p className="text-sm font-medium text-gray-700 mb-1">考試連結</p>
+              <p className="text-sm font-medium text-gray-700 mb-1">測驗連結</p>
               <code className="block bg-gray-100 rounded px-3 py-2 text-xs break-all">{examUrl}</code>
             </div>
           </div>

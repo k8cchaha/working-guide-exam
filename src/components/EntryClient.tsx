@@ -35,7 +35,7 @@ export default function EntryClient({ examId, members, examStatus, authMode }: P
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-sm w-full">
           <p className="text-2xl mb-2">🏁</p>
-          <h2 className="text-xl font-bold mb-2">考試已結束</h2>
+          <h2 className="text-xl font-bold mb-2">測驗已結束</h2>
           <p className="text-gray-500 text-sm mb-4">成績已發佈，請前往查看排名</p>
           <button
             onClick={() => router.push(`/exam/${examId}/result`)}
