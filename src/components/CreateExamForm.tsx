@@ -139,7 +139,7 @@ export default function CreateExamForm({ savedLists: initialLists }: Props) {
 
       {/* 模式選擇 */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">成員驗證模式</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">成員登入方式</label>
         <select
           value={mode}
           onChange={(e) => { setMode(e.target.value as AuthMode); setError(''); setShowSave(false) }}
