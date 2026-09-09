@@ -33,7 +33,7 @@ export default function GradeForm({ submissionId, currentScore, maxScore }: Prop
         max={maxScore}
         value={score}
         onChange={(e) => { setScore(e.target.value); setSaved(false) }}
-        className="w-20 border rounded px-2 py-1 text-sm"
+        className="w-20 border border-gray-300 rounded px-2 py-1 text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
       />
       <button
         onClick={handleSave}

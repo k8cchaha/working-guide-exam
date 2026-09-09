@@ -138,7 +138,7 @@ export default function CreateExamForm({ savedLists: initialLists }: Props) {
           min={0}
           max={106}
           onChange={(e) => setPassingScore(Number(e.target.value))}
-          className="w-28 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          className="w-28 border border-gray-300 rounded-lg px-3 py-2 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
         />
         <span className="text-xs text-gray-400">（滿分 100，加分題可超過）</span>
       </div>
@@ -149,7 +149,7 @@ export default function CreateExamForm({ savedLists: initialLists }: Props) {
         <select
           value={mode}
           onChange={(e) => { setMode(e.target.value as AuthMode); setError(''); setShowSave(false) }}
-          className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          className="border border-gray-300 rounded-lg px-3 py-2 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition cursor-pointer"
         >
           <option value="NAME_ONLY">名稱清單</option>
           <option value="NAME_PASSWORD">名稱清單 + 密碼</option>
@@ -204,7 +204,7 @@ export default function CreateExamForm({ savedLists: initialLists }: Props) {
                         value={row.name}
                         onChange={(e) => setRows((r) => r.map((x, j) => j === i ? { ...x, name: e.target.value } : x))}
                         placeholder="姓名"
-                        className="w-full border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                        className="w-full border border-gray-200 rounded px-2 py-1 text-sm hover:border-gray-400 focus:outline-none focus:ring-1 focus:ring-indigo-400 transition"
                       />
                     </td>
                     <td className="px-2 py-1.5">
@@ -212,7 +212,7 @@ export default function CreateExamForm({ savedLists: initialLists }: Props) {
                         value={row.password}
                         onChange={(e) => setRows((r) => r.map((x, j) => j === i ? { ...x, password: e.target.value } : x))}
                         placeholder="密碼"
-                        className="w-full border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                        className="w-full border border-gray-200 rounded px-2 py-1 text-sm hover:border-gray-400 focus:outline-none focus:ring-1 focus:ring-indigo-400 transition"
                       />
                     </td>
                     <td className="px-2 py-1.5 text-center">
@@ -302,7 +302,7 @@ export default function CreateExamForm({ savedLists: initialLists }: Props) {
                 value={listName}
                 onChange={(e) => { setListName(e.target.value); setSaveMsg('') }}
                 placeholder="輸入清單名稱…"
-                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
               />
               <button
                 type="button"

@@ -124,7 +124,7 @@ export default function EntryClient({ examId, members, examStatus, authMode }: P
           <select
             value={selectedMemberId}
             onChange={(e) => { setSelectedMemberId(e.target.value); setPasswordError('') }}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition cursor-pointer"
           >
             <option value="">— 請選擇 —</option>
             {members.map((m) => (
@@ -142,8 +142,8 @@ export default function EntryClient({ examId, members, examStatus, authMode }: P
               value={password}
               onChange={(e) => { setPassword(e.target.value); setPasswordError('') }}
               placeholder="請輸入 Admin 設定的密碼"
-              className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${
-                passwordError ? 'border-red-400 focus:ring-red-300' : 'border-gray-300 focus:ring-indigo-400'
+              className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 transition ${
+                passwordError ? 'border-red-400 focus:ring-red-300 hover:border-red-400' : 'border-gray-300 focus:ring-indigo-400 hover:border-gray-400'
               }`}
             />
             {passwordError && <p className="text-red-500 text-xs mt-1">{passwordError}</p>}

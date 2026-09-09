@@ -203,7 +203,7 @@ export default function QuizClient({ examId, questions }: Props) {
                 value={(answers[q.id] as string) ?? ''}
                 onChange={(e) => setShortAnswer(q.id, e.target.value)}
                 placeholder="請在此輸入你的答案…"
-                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
+                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none transition"
               />
             )}
           </div>
