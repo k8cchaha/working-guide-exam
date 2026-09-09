@@ -2,16 +2,18 @@ import { getAdminSession } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { logoutAction } from '@/actions/admin'
-import { ExamStatus } from '@prisma/client'
+import { ExamStatus, Exam, SavedList, SavedListMember } from '@prisma/client'
 import Link from 'next/link'
 import CreateExamForm from '@/components/CreateExamForm'
+import CreateQuestionForm from '@/components/CreateQuestionForm'
+import QuestionList from '@/components/QuestionList'
 import type { SavedListData } from '@/components/CreateExamForm'
 
 export default async function DashboardPage() {
   const session = await getAdminSession()
   if (!session) redirect('/admin')
 
-  const [exams, savedLists] = await Promise.all([
+  const [exams, savedLists, questions] = await Promise.all([
     prisma.exam.findMany({
       where: { adminUsername: session.username },
       orderBy: { createdAt: 'desc' },
@@ -22,9 +24,14 @@ export default async function DashboardPage() {
       orderBy: { createdAt: 'desc' },
       include: { members: { select: { name: true, password: true } } },
     }),
+    prisma.question.findMany({
+      where: { OR: [{ adminUsername: session.username }, { isShared: true }] },
+      orderBy: { createdAt: 'desc' },
+    }),
   ])
 
-  const savedListsData: SavedListData[] = savedLists.map((l) => ({
+  type SavedListWithMembers = SavedList & { members: Pick<SavedListMember, 'name' | 'password'>[] }
+  const savedListsData: SavedListData[] = savedLists.map((l: SavedListWithMembers) => ({
     id: l.id,
     name: l.name,
     authMode: l.authMode,
@@ -43,17 +50,30 @@ export default async function DashboardPage() {
         </div>
       </nav>
 
-      <div className="max-w-4xl mx-auto p-6 space-y-8">
-        <section className="bg-white rounded-2xl shadow-sm p-6">
-          <h2 className="text-xl font-semibold mb-4">建立新測驗</h2>
-          <CreateExamForm savedLists={savedListsData} />
-        </section>
+      <div className="max-w-5xl mx-auto p-6 space-y-8">
 
+        {/* 並排：建立新測驗 + 建立新考題 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <section className="bg-white rounded-2xl shadow-sm p-6">
+            <h2 className="text-xl font-semibold mb-4">建立新測驗</h2>
+            <CreateExamForm savedLists={savedListsData} />
+          </section>
+
+          <section className="bg-white rounded-2xl shadow-sm p-6">
+            <h2 className="text-xl font-semibold mb-4">建立新考題</h2>
+            <CreateQuestionForm />
+          </section>
+        </div>
+
+        {/* 考題庫 */}
+        <QuestionList questions={questions} currentAdmin={session.username} />
+
+        {/* 我的測驗 */}
         {exams.length > 0 && (
           <section className="bg-white rounded-2xl shadow-sm p-6">
             <h2 className="text-xl font-semibold mb-4">我的測驗</h2>
             <div className="space-y-3">
-              {exams.map((exam) => (
+              {exams.map((exam: Exam & { _count: { members: number; submissions: number } }) => (
                 <Link
                   key={exam.id}
                   href={`/admin/dashboard/${exam.id}`}

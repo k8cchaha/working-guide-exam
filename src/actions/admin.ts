@@ -137,3 +137,56 @@ export async function deleteSavedListAction(savedListId: string) {
   })
   return { ok: true }
 }
+
+// ── Question ──────────────────────────────────────────────────────────────────
+
+export type OptionInput = { id: string; text: string; isCorrect: boolean }
+
+export async function createQuestionAction(params: {
+  type: string
+  text: string
+  points: number
+  isBonus: boolean
+  isShared: boolean
+  options?: OptionInput[]
+  gradingHint?: string
+}) {
+  const session = await getAdminSession()
+  if (!session) return { error: '未授權' }
+  if (!params.text.trim()) return { error: '請輸入題目內容' }
+
+  const q = await prisma.question.create({
+    data: {
+      adminUsername: session.username,
+      type: params.type,
+      text: params.text.trim(),
+      points: params.points,
+      isBonus: params.isBonus,
+      isShared: params.isShared,
+      options: params.options ?? undefined,
+      gradingHint: params.gradingHint?.trim() || null,
+    },
+  })
+  return { ok: true, question: q }
+}
+
+export async function deleteQuestionAction(questionId: string) {
+  const session = await getAdminSession()
+  if (!session) return { error: '未授權' }
+
+  await prisma.question.deleteMany({
+    where: { id: questionId, adminUsername: session.username },
+  })
+  return { ok: true }
+}
+
+export async function toggleQuestionSharedAction(questionId: string, isShared: boolean) {
+  const session = await getAdminSession()
+  if (!session) return { error: '未授權' }
+
+  await prisma.question.updateMany({
+    where: { id: questionId, adminUsername: session.username },
+    data: { isShared },
+  })
+  return { ok: true }
+}

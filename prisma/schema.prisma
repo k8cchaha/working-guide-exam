@@ -66,6 +66,19 @@ model SavedListMember {
   @@unique([savedListId, name])
 }
 
+model Question {
+  id            String   @id @default(cuid())
+  adminUsername String
+  isShared      Boolean  @default(false)
+  type          String
+  text          String
+  points        Int      @default(3)
+  isBonus       Boolean  @default(false)
+  options       Json?
+  gradingHint   String?
+  createdAt     DateTime @default(now())
+}
+
 enum ExamStatus {
   ACTIVE
   PUBLISHED
