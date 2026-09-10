@@ -66,17 +66,28 @@ model SavedListMember {
   @@unique([savedListId, name])
 }
 
-model Question {
-  id            String   @id @default(cuid())
+model QuestionBank {
+  id            String     @id @default(cuid())
   adminUsername String
-  isShared      Boolean  @default(false)
-  type          String
-  text          String
-  points        Int      @default(3)
-  isBonus       Boolean  @default(false)
-  options       Json?
-  gradingHint   String?
-  createdAt     DateTime @default(now())
+  name          String
+  isShared      Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+  questions     Question[]
+
+  @@unique([adminUsername, name])
+}
+
+model Question {
+  id          String       @id @default(cuid())
+  bankId      String
+  type        String
+  text        String
+  points      Int          @default(3)
+  isBonus     Boolean      @default(false)
+  options     Json?
+  gradingHint String?
+  createdAt   DateTime     @default(now())
+  bank        QuestionBank @relation(fields: [bankId], references: [id], onDelete: Cascade)
 }
 
 enum ExamStatus {

@@ -138,16 +138,52 @@ export async function deleteSavedListAction(savedListId: string) {
   return { ok: true }
 }
 
+// ── QuestionBank ──────────────────────────────────────────────────────────────
+
+export async function createBankAction(name: string, isShared = false) {
+  const session = await getAdminSession()
+  if (!session) return { error: '未授權' }
+  if (!name.trim()) return { error: '請輸入題庫名稱' }
+
+  const bank = await prisma.questionBank.upsert({
+    where: { adminUsername_name: { adminUsername: session.username, name: name.trim() } },
+    update: {},
+    create: { adminUsername: session.username, name: name.trim(), isShared },
+  })
+  return { ok: true, bank }
+}
+
+export async function toggleBankSharedAction(bankId: string, isShared: boolean) {
+  const session = await getAdminSession()
+  if (!session) return { error: '未授權' }
+
+  await prisma.questionBank.updateMany({
+    where: { id: bankId, adminUsername: session.username },
+    data: { isShared },
+  })
+  return { ok: true }
+}
+
+export async function deleteBankAction(bankId: string) {
+  const session = await getAdminSession()
+  if (!session) return { error: '未授權' }
+
+  await prisma.questionBank.deleteMany({
+    where: { id: bankId, adminUsername: session.username },
+  })
+  return { ok: true }
+}
+
 // ── Question ──────────────────────────────────────────────────────────────────
 
 export type OptionInput = { id: string; text: string; isCorrect: boolean }
 
 export async function createQuestionAction(params: {
+  bankId: string
   type: string
   text: string
   points: number
   isBonus: boolean
-  isShared: boolean
   options?: OptionInput[]
   gradingHint?: string
 }) {
@@ -155,14 +191,19 @@ export async function createQuestionAction(params: {
   if (!session) return { error: '未授權' }
   if (!params.text.trim()) return { error: '請輸入題目內容' }
 
+  // Verify the bank belongs to this admin
+  const bank = await prisma.questionBank.findFirst({
+    where: { id: params.bankId, adminUsername: session.username },
+  })
+  if (!bank) return { error: '題庫不存在' }
+
   const q = await prisma.question.create({
     data: {
-      adminUsername: session.username,
+      bankId: params.bankId,
       type: params.type,
       text: params.text.trim(),
       points: params.points,
       isBonus: params.isBonus,
-      isShared: params.isShared,
       options: params.options ?? undefined,
       gradingHint: params.gradingHint?.trim() || null,
     },
@@ -174,19 +215,9 @@ export async function deleteQuestionAction(questionId: string) {
   const session = await getAdminSession()
   if (!session) return { error: '未授權' }
 
+  // Only delete if the question's bank belongs to this admin
   await prisma.question.deleteMany({
-    where: { id: questionId, adminUsername: session.username },
-  })
-  return { ok: true }
-}
-
-export async function toggleQuestionSharedAction(questionId: string, isShared: boolean) {
-  const session = await getAdminSession()
-  if (!session) return { error: '未授權' }
-
-  await prisma.question.updateMany({
-    where: { id: questionId, adminUsername: session.username },
-    data: { isShared },
+    where: { id: questionId, bank: { adminUsername: session.username } },
   })
   return { ok: true }
 }

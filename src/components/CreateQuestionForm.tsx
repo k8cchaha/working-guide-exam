@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createQuestionAction } from '@/actions/admin'
+import { createQuestionAction, createBankAction } from '@/actions/admin'
 import type { OptionInput } from '@/actions/admin'
 
 type QuestionType = 'single' | 'multiple' | 'true_false' | 'short_answer'
@@ -22,14 +22,22 @@ const DEFAULT_POINTS: Record<QuestionType, number> = {
 }
 
 interface OptionRow { text: string; isCorrect: boolean }
+interface BankOption { id: string; name: string }
 
-export default function CreateQuestionForm() {
+interface Props {
+  myBanks: BankOption[]
+}
+
+export default function CreateQuestionForm({ myBanks: initialBanks }: Props) {
   const router = useRouter()
+  const [myBanks, setMyBanks] = useState<BankOption[]>(initialBanks)
+  const [selectedBankId, setSelectedBankId] = useState<string>(initialBanks[0]?.id ?? 'new')
+  const [newBankName, setNewBankName] = useState('')
+  const [newBankIsShared, setNewBankIsShared] = useState(false)
   const [type, setType] = useState<QuestionType>('single')
   const [text, setText] = useState('')
   const [points, setPoints] = useState(3)
   const [isBonus, setIsBonus] = useState(false)
-  const [isShared, setIsShared] = useState(false)
   const [options, setOptions] = useState<OptionRow[]>([
     { text: '', isCorrect: false },
     { text: '', isCorrect: false },
@@ -55,12 +63,14 @@ export default function CreateQuestionForm() {
     setOptions((prev) => prev.map((o, j) => ({ ...o, isCorrect: j === i })))
   }
 
+  const isNewBank = selectedBankId === 'new'
   const needsOptions = type === 'single' || type === 'multiple'
   const filledOptions = options.filter((o) => o.text.trim())
   const hasCorrect = filledOptions.some((o) => o.isCorrect)
 
   const canSubmit =
     text.trim().length > 0 &&
+    (!isNewBank || newBankName.trim().length > 0) &&
     (type === 'true_false' ? trueFalseAnswer !== '' :
      type === 'short_answer' ? true :
      filledOptions.length >= 2 && hasCorrect)
@@ -69,6 +79,22 @@ export default function CreateQuestionForm() {
     if (!canSubmit) return
     setSubmitting(true)
     setError('')
+
+    let bankId = selectedBankId
+    if (isNewBank) {
+      const bankResult = await createBankAction(newBankName.trim(), newBankIsShared)
+      if (bankResult.error || !bankResult.bank) {
+        setError(bankResult.error ?? '建立題庫失敗')
+        setSubmitting(false)
+        return
+      }
+      const created = bankResult.bank
+      bankId = created.id
+      setMyBanks((prev) => [...prev, { id: created.id, name: created.name }])
+      setSelectedBankId(created.id)
+      setNewBankName('')
+      setNewBankIsShared(false)
+    }
 
     let optionData: OptionInput[] | undefined
     if (type === 'true_false') {
@@ -85,7 +111,7 @@ export default function CreateQuestionForm() {
     }
 
     const result = await createQuestionAction({
-      type, text, points, isBonus, isShared,
+      bankId, type, text, points, isBonus,
       options: optionData,
       gradingHint: gradingHint || undefined,
     })
@@ -96,13 +122,11 @@ export default function CreateQuestionForm() {
       return
     }
 
-    // reset form
     setText('')
     setGradingHint('')
     setTrueFalseAnswer('')
     setOptions([{ text: '', isCorrect: false }, { text: '', isCorrect: false }])
     setIsBonus(false)
-    setIsShared(false)
     setSuccess(true)
     setTimeout(() => setSuccess(false), 2000)
     setSubmitting(false)
@@ -111,6 +135,46 @@ export default function CreateQuestionForm() {
 
   return (
     <div className="space-y-4">
+      {/* 題庫選擇 */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">題庫</label>
+        <select
+          value={selectedBankId}
+          onChange={(e) => setSelectedBankId(e.target.value)}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
+        >
+          {myBanks.map((b) => (
+            <option key={b.id} value={b.id}>{b.name}</option>
+          ))}
+          <option value="new">＋ 建立新題庫…</option>
+        </select>
+      </div>
+
+      {/* 新建題庫 */}
+      {isNewBank && (
+        <div className="p-3 bg-indigo-50 rounded-xl space-y-2 border border-indigo-100">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">題庫名稱</label>
+            <input
+              type="text"
+              value={newBankName}
+              onChange={(e) => setNewBankName(e.target.value)}
+              placeholder="例如：Jira 基礎概念"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
+            />
+          </div>
+          <label className="flex items-center gap-1.5 text-sm text-gray-700 select-none">
+            <input
+              type="checkbox"
+              checked={newBankIsShared}
+              onChange={(e) => setNewBankIsShared(e.target.checked)}
+              className="accent-indigo-600"
+            />
+            🌐 開放共用給其他 Admin
+          </label>
+        </div>
+      )}
+
       {/* 題型 */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">題型</label>
@@ -239,7 +303,7 @@ export default function CreateQuestionForm() {
         </div>
       )}
 
-      {/* 配分 + 加分題 + 共用 */}
+      {/* 配分 + 加分題 */}
       <div className="flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium text-gray-700 shrink-0">配分</label>
@@ -254,11 +318,6 @@ export default function CreateQuestionForm() {
           <input type="checkbox" checked={isBonus} onChange={(e) => setIsBonus(e.target.checked)}
             className="accent-amber-500" />
           ⭐ 加分題
-        </label>
-        <label className="flex items-center gap-1.5 text-sm text-gray-700 select-none">
-          <input type="checkbox" checked={isShared} onChange={(e) => setIsShared(e.target.checked)}
-            className="accent-indigo-600" />
-          🌐 開放共用
         </label>
       </div>
 

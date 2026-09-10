@@ -13,7 +13,7 @@ export default async function DashboardPage() {
   const session = await getAdminSession()
   if (!session) redirect('/admin')
 
-  const [exams, savedLists, questions] = await Promise.all([
+  const [exams, savedLists, banks] = await Promise.all([
     prisma.exam.findMany({
       where: { adminUsername: session.username },
       orderBy: { createdAt: 'desc' },
@@ -24,9 +24,10 @@ export default async function DashboardPage() {
       orderBy: { createdAt: 'desc' },
       include: { members: { select: { name: true, password: true } } },
     }),
-    prisma.question.findMany({
+    prisma.questionBank.findMany({
       where: { OR: [{ adminUsername: session.username }, { isShared: true }] },
       orderBy: { createdAt: 'desc' },
+      include: { questions: { orderBy: { createdAt: 'asc' } } },
     }),
   ])
 
@@ -37,6 +38,10 @@ export default async function DashboardPage() {
     authMode: l.authMode,
     members: l.members,
   }))
+
+  const myBanks = banks
+    .filter((b) => b.adminUsername === session.username)
+    .map((b) => ({ id: b.id, name: b.name }))
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -61,12 +66,12 @@ export default async function DashboardPage() {
 
           <section className="bg-white rounded-2xl shadow-sm p-6">
             <h2 className="text-xl font-semibold mb-4">建立新考題</h2>
-            <CreateQuestionForm />
+            <CreateQuestionForm myBanks={myBanks} />
           </section>
         </div>
 
         {/* 考題庫 */}
-        <QuestionList questions={questions} currentAdmin={session.username} />
+        <QuestionList banks={banks} currentAdmin={session.username} />
 
         {/* 我的測驗 */}
         {exams.length > 0 && (
