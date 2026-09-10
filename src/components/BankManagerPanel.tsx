@@ -137,6 +137,76 @@ function BankSettingsModal({
   )
 }
 
+// ── Delete confirmation modal ────────────────────────────────────────────────
+
+function DeleteBankModal({
+  bank,
+  onConfirm,
+  onClose,
+}: {
+  bank: BankData
+  onConfirm: (bankId: string, password: string) => Promise<string | null>
+  onClose: () => void
+}) {
+  const [password, setPassword] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleDelete() {
+    if (!password) { setError('請輸入密碼'); return }
+    setDeleting(true)
+    setError('')
+    const err = await onConfirm(bank.id, password)
+    if (err) { setError(err); setDeleting(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4">
+        <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b">
+          <h2 className="text-lg font-semibold text-gray-800">確認刪除題庫</h2>
+          <button type="button" onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-2xl leading-none px-1">
+            ×
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          <p className="text-sm text-gray-600">
+            即將刪除題庫「<span className="font-semibold text-gray-800">{bank.name}</span>」
+            及其所有 <span className="font-semibold">{bank.questions.length}</span> 道題目，此操作無法復原。
+          </p>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">請輸入你的登入密碼確認</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleDelete()}
+              placeholder="登入密碼"
+              autoFocus
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-red-400 transition"
+            />
+          </div>
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+        </div>
+
+        <div className="flex items-center justify-between px-6 py-4 border-t">
+          <button type="button" onClick={onClose}
+            className="text-sm text-gray-500 hover:text-gray-700">
+            取消
+          </button>
+          <button type="button" onClick={handleDelete}
+            disabled={deleting || !password}
+            className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed">
+            {deleting ? '刪除中…' : '確認刪除'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Bank card ─────────────────────────────────────────────────────────────────
 
 function BankCard({
@@ -146,7 +216,7 @@ function BankCard({
   isOwn: boolean
   onDeleteQuestion: (bankId: string, qId: string) => void
   onSettings: (bank: BankData) => void
-  onDeleteBank: (bankId: string) => void
+  onDeleteBank: (bank: BankData) => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const [deletingQId, setDeletingQId] = useState('')
@@ -185,10 +255,7 @@ function BankCard({
                 設定
               </button>
               <button type="button"
-                onClick={() => {
-                  if (confirm(`確定刪除題庫「${bank.name}」及其所有 ${bank.questions.length} 題？`))
-                    onDeleteBank(bank.id)
-                }}
+                onClick={() => onDeleteBank(bank)}
                 className="text-xs text-red-400 hover:text-red-600 whitespace-nowrap">
                 刪除
               </button>
@@ -239,6 +306,7 @@ export default function BankManagerPanel({ banks: initial, currentAdmin }: Props
   const [banks, setBanks] = useState<BankData[]>(initial)
   const [createOpen, setCreateOpen] = useState(false)
   const [settingsBank, setSettingsBank] = useState<BankData | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<BankData | null>(null)
 
   function handleDeleteQuestion(bankId: string, qId: string) {
     setBanks((prev) => prev.map((b) =>
@@ -246,9 +314,12 @@ export default function BankManagerPanel({ banks: initial, currentAdmin }: Props
     ))
   }
 
-  async function handleDeleteBank(bankId: string) {
-    await deleteBankAction(bankId)
+  async function handleDeleteConfirm(bankId: string, password: string): Promise<string | null> {
+    const result = await deleteBankAction(bankId, password)
+    if (result.error) return result.error
     setBanks((prev) => prev.filter((b) => b.id !== bankId))
+    setDeleteTarget(null)
+    return null
   }
 
   function handleSettingsSave(updated: Pick<BankData, 'id' | 'name' | 'isShared' | 'questionOrder'>) {
@@ -285,7 +356,7 @@ export default function BankManagerPanel({ banks: initial, currentAdmin }: Props
                   <BankCard key={bank.id} bank={bank} isOwn
                     onDeleteQuestion={handleDeleteQuestion}
                     onSettings={setSettingsBank}
-                    onDeleteBank={handleDeleteBank}
+                    onDeleteBank={setDeleteTarget}
                   />
                 ))}
               </div>
@@ -300,7 +371,7 @@ export default function BankManagerPanel({ banks: initial, currentAdmin }: Props
                   <BankCard key={bank.id} bank={bank} isOwn={false}
                     onDeleteQuestion={handleDeleteQuestion}
                     onSettings={setSettingsBank}
-                    onDeleteBank={handleDeleteBank}
+                    onDeleteBank={setDeleteTarget}
                   />
                 ))}
               </div>
@@ -318,6 +389,14 @@ export default function BankManagerPanel({ banks: initial, currentAdmin }: Props
           bank={settingsBank}
           onSave={handleSettingsSave}
           onClose={() => setSettingsBank(null)}
+        />
+      )}
+
+      {deleteTarget && (
+        <DeleteBankModal
+          bank={deleteTarget}
+          onConfirm={handleDeleteConfirm}
+          onClose={() => setDeleteTarget(null)}
         />
       )}
     </div>

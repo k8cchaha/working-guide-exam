@@ -189,9 +189,10 @@ export async function updateBankAction(
   }
 }
 
-export async function deleteBankAction(bankId: string) {
+export async function deleteBankAction(bankId: string, password: string) {
   const session = await getAdminSession()
   if (!session) return { error: '未授權' }
+  if (!validateAdminCredentials(session.username, password)) return { error: '密碼錯誤' }
 
   await prisma.questionBank.deleteMany({
     where: { id: bankId, adminUsername: session.username },
