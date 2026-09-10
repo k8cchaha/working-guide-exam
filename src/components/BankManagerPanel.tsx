@@ -37,15 +37,17 @@ const TYPE_LABEL: Record<string, string> = {
   short_answer: '問答',
 }
 
-// ── Settings modal ────────────────────────────────────────────────────────────
+// ── Settings modal (includes delete trigger) ──────────────────────────────────
 
 function BankSettingsModal({
   bank,
   onSave,
+  onDelete,
   onClose,
 }: {
   bank: BankData
   onSave: (updated: Pick<BankData, 'id' | 'name' | 'isShared' | 'questionOrder'>) => void
+  onDelete: (bank: BankData) => void
   onClose: () => void
 }) {
   const [name, setName] = useState(bank.name)
@@ -61,11 +63,7 @@ function BankSettingsModal({
     setSaving(true)
     setError('')
     const result = await updateBankAction(bank.id, { name: name.trim(), isShared, questionOrder })
-    if (result.error) {
-      setError(result.error)
-      setSaving(false)
-      return
-    }
+    if (result.error) { setError(result.error); setSaving(false); return }
     onSave({ id: bank.id, name: name.trim(), isShared, questionOrder })
   }
 
@@ -75,26 +73,18 @@ function BankSettingsModal({
         <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b">
           <h2 className="text-lg font-semibold text-gray-800">題庫設定</h2>
           <button type="button" onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl leading-none px-1">
-            ×
-          </button>
+            className="text-gray-400 hover:text-gray-600 text-2xl leading-none px-1">×</button>
         </div>
 
         <div className="px-6 py-5 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">題庫名稱</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              autoFocus
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
-            />
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} autoFocus
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition" />
           </div>
 
           <label className="flex items-center gap-2 text-sm text-gray-700 select-none">
-            <input type="checkbox" checked={isShared}
-              onChange={(e) => setIsShared(e.target.checked)}
+            <input type="checkbox" checked={isShared} onChange={(e) => setIsShared(e.target.checked)}
               className="accent-indigo-600" />
             🌐 開放共用給其他 Admin
           </label>
@@ -106,8 +96,7 @@ function BankSettingsModal({
                 { value: 'sequential', label: '📋 依序' },
                 { value: 'random', label: '🔀 隨機' },
               ] as const).map(({ value, label }) => (
-                <button key={value} type="button"
-                  onClick={() => setQuestionOrder(value)}
+                <button key={value} type="button" onClick={() => setQuestionOrder(value)}
                   className={`flex-1 py-2 rounded-lg text-sm font-medium border transition ${
                     questionOrder === value
                       ? 'bg-indigo-600 text-white border-indigo-600'
@@ -120,13 +109,20 @@ function BankSettingsModal({
           </div>
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
+
+          {/* Danger zone */}
+          <div className="pt-2 border-t">
+            <button type="button"
+              onClick={() => { onClose(); onDelete(bank) }}
+              className="text-sm text-red-500 hover:text-red-700 hover:underline">
+              刪除此題庫…
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center justify-between px-6 py-4 border-t">
           <button type="button" onClick={onClose}
-            className="text-sm text-gray-500 hover:text-gray-700">
-            取消
-          </button>
+            className="text-sm text-gray-500 hover:text-gray-700">取消</button>
           <button type="button" onClick={handleSave} disabled={saving || !name.trim()}
             className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed">
             {saving ? '儲存中…' : '儲存'}
@@ -137,7 +133,7 @@ function BankSettingsModal({
   )
 }
 
-// ── Delete confirmation modal ────────────────────────────────────────────────
+// ── Delete confirmation modal ─────────────────────────────────────────────────
 
 function DeleteBankModal({
   bank,
@@ -166,38 +162,28 @@ function DeleteBankModal({
         <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b">
           <h2 className="text-lg font-semibold text-gray-800">確認刪除題庫</h2>
           <button type="button" onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl leading-none px-1">
-            ×
-          </button>
+            className="text-gray-400 hover:text-gray-600 text-2xl leading-none px-1">×</button>
         </div>
 
         <div className="px-6 py-5 space-y-4">
           <p className="text-sm text-gray-600">
-            即將刪除題庫「<span className="font-semibold text-gray-800">{bank.name}</span>」
+            即將刪除「<span className="font-semibold text-gray-800">{bank.name}</span>」
             及其所有 <span className="font-semibold">{bank.questions.length}</span> 道題目，此操作無法復原。
           </p>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">請輸入你的登入密碼確認</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleDelete()}
-              placeholder="登入密碼"
-              autoFocus
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-red-400 transition"
-            />
+              placeholder="登入密碼" autoFocus
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-red-400 transition" />
           </div>
           {error && <p className="text-red-500 text-sm">{error}</p>}
         </div>
 
         <div className="flex items-center justify-between px-6 py-4 border-t">
           <button type="button" onClick={onClose}
-            className="text-sm text-gray-500 hover:text-gray-700">
-            取消
-          </button>
-          <button type="button" onClick={handleDelete}
-            disabled={deleting || !password}
+            className="text-sm text-gray-500 hover:text-gray-700">取消</button>
+          <button type="button" onClick={handleDelete} disabled={deleting || !password}
             className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed">
             {deleting ? '刪除中…' : '確認刪除'}
           </button>
@@ -210,16 +196,19 @@ function DeleteBankModal({
 // ── Bank card ─────────────────────────────────────────────────────────────────
 
 function BankCard({
-  bank, isOwn, onDeleteQuestion, onSettings, onDeleteBank,
+  bank, isOwn, onDeleteQuestion, onSettings,
 }: {
   bank: BankData
   isOwn: boolean
   onDeleteQuestion: (bankId: string, qId: string) => void
   onSettings: (bank: BankData) => void
-  onDeleteBank: (bank: BankData) => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const [deletingQId, setDeletingQId] = useState('')
+
+  const totalScore = bank.questions
+    .filter((q) => !q.isBonus)
+    .reduce((sum, q) => sum + q.points, 0)
 
   async function handleDeleteQ(qId: string) {
     setDeletingQId(qId)
@@ -230,41 +219,41 @@ function BankCard({
 
   return (
     <div className="border rounded-xl overflow-hidden">
+      {/* Card header — click to expand */}
       <div
-        className="flex items-center justify-between gap-2 p-3 bg-gray-50 hover:bg-gray-100 transition"
+        className="p-3 bg-gray-50 hover:bg-gray-100 transition"
         onClick={() => setExpanded((v) => !v)}
       >
-        <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+        {/* Row 1: name + badges */}
+        <div className="flex items-center gap-2 flex-wrap mb-1.5">
           <span className="font-medium text-sm text-gray-800">{bank.name}</span>
-          <span className="text-xs text-gray-400">{bank.questions.length} 題</span>
           {bank.isShared
             ? <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">🌐 共用中</span>
             : isOwn && <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">🔒 未共用</span>
           }
           {!isOwn && <span className="text-xs text-gray-400">由 {bank.adminUsername} 提供</span>}
-          <span className="text-xs text-gray-400">
-            {bank.questionOrder === 'sequential' ? '📋 依序' : '🔀 隨機'}
-          </span>
         </div>
-        <div className="flex items-center gap-3 shrink-0" onClick={(e) => e.stopPropagation()}>
-          {isOwn && (
-            <>
-              <button type="button"
-                onClick={() => onSettings(bank)}
+
+        {/* Row 2: stats + actions */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
+            <span>總分 <span className="font-medium text-gray-700">{totalScore}</span> 分</span>
+            <span>{bank.questions.length} 題</span>
+            <span>{bank.questionOrder === 'sequential' ? '📋 依序' : '🔀 隨機'}</span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+            {isOwn && (
+              <button type="button" onClick={() => onSettings(bank)}
                 className="text-xs text-indigo-600 hover:underline whitespace-nowrap">
                 設定
               </button>
-              <button type="button"
-                onClick={() => onDeleteBank(bank)}
-                className="text-xs text-red-400 hover:text-red-600 whitespace-nowrap">
-                刪除
-              </button>
-            </>
-          )}
-          <span className="text-gray-400 text-xs">{expanded ? '▲' : '▼'}</span>
+            )}
+            <span className="text-gray-300 text-xs">{expanded ? '▲' : '▼'}</span>
+          </div>
         </div>
       </div>
 
+      {/* Expanded question list */}
       {expanded && (
         bank.questions.length > 0 ? (
           <div className="divide-y">
@@ -281,8 +270,7 @@ function BankCard({
                   <p className="text-sm text-gray-800 line-clamp-1">{q.text}</p>
                 </div>
                 {isOwn && (
-                  <button type="button"
-                    onClick={() => handleDeleteQ(q.id)}
+                  <button type="button" onClick={() => handleDeleteQ(q.id)}
                     disabled={deletingQId === q.id}
                     className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50 shrink-0 mt-0.5">
                     {deletingQId === q.id ? '…' : '刪除'}
@@ -323,9 +311,7 @@ export default function BankManagerPanel({ banks: initial, currentAdmin }: Props
   }
 
   function handleSettingsSave(updated: Pick<BankData, 'id' | 'name' | 'isShared' | 'questionOrder'>) {
-    setBanks((prev) => prev.map((b) =>
-      b.id === updated.id ? { ...b, ...updated } : b
-    ))
+    setBanks((prev) => prev.map((b) => b.id === updated.id ? { ...b, ...updated } : b))
     setSettingsBank(null)
   }
 
@@ -356,7 +342,6 @@ export default function BankManagerPanel({ banks: initial, currentAdmin }: Props
                   <BankCard key={bank.id} bank={bank} isOwn
                     onDeleteQuestion={handleDeleteQuestion}
                     onSettings={setSettingsBank}
-                    onDeleteBank={setDeleteTarget}
                   />
                 ))}
               </div>
@@ -371,7 +356,6 @@ export default function BankManagerPanel({ banks: initial, currentAdmin }: Props
                   <BankCard key={bank.id} bank={bank} isOwn={false}
                     onDeleteQuestion={handleDeleteQuestion}
                     onSettings={setSettingsBank}
-                    onDeleteBank={setDeleteTarget}
                   />
                 ))}
               </div>
@@ -388,6 +372,7 @@ export default function BankManagerPanel({ banks: initial, currentAdmin }: Props
         <BankSettingsModal
           bank={settingsBank}
           onSave={handleSettingsSave}
+          onDelete={(bank) => { setSettingsBank(null); setDeleteTarget(bank) }}
           onClose={() => setSettingsBank(null)}
         />
       )}
