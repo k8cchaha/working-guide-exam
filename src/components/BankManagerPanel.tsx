@@ -224,14 +224,16 @@ function BankCard({
         className="p-3 bg-gray-50 hover:bg-gray-100 transition"
         onClick={() => setExpanded((v) => !v)}
       >
-        {/* Row 1: name + badges */}
-        <div className="flex items-center gap-2 flex-wrap mb-1.5">
-          <span className="font-medium text-sm text-gray-800">{bank.name}</span>
+        {/* Row 1: name (left) + shared badge (right) */}
+        <div className="flex items-center justify-between gap-2 mb-1.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-medium text-sm text-gray-800 truncate">{bank.name}</span>
+            {!isOwn && <span className="text-xs text-gray-400 shrink-0">由 {bank.adminUsername} 提供</span>}
+          </div>
           {bank.isShared
-            ? <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">🌐 共用中</span>
-            : isOwn && <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">🔒 未共用</span>
+            ? <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full shrink-0">🌐 共用中</span>
+            : isOwn && <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full shrink-0">🔒 未共用</span>
           }
-          {!isOwn && <span className="text-xs text-gray-400">由 {bank.adminUsername} 提供</span>}
         </div>
 
         {/* Row 2: stats + actions */}
