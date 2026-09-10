@@ -140,7 +140,7 @@ export async function deleteSavedListAction(savedListId: string) {
 
 // ── QuestionBank ──────────────────────────────────────────────────────────────
 
-export async function createBankAction(name: string, isShared = false) {
+export async function createBankAction(name: string, isShared = false, questionOrder = 'random') {
   const session = await getAdminSession()
   if (!session) return { error: '未授權' }
   if (!name.trim()) return { error: '請輸入題庫名稱' }
@@ -148,7 +148,7 @@ export async function createBankAction(name: string, isShared = false) {
   const bank = await prisma.questionBank.upsert({
     where: { adminUsername_name: { adminUsername: session.username, name: name.trim() } },
     update: {},
-    create: { adminUsername: session.username, name: name.trim(), isShared },
+    create: { adminUsername: session.username, name: name.trim(), isShared, questionOrder },
   })
   return { ok: true, bank }
 }

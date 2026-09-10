@@ -71,6 +71,7 @@ model QuestionBank {
   adminUsername String
   name          String
   isShared      Boolean    @default(false)
+  questionOrder String     @default("random")
   createdAt     DateTime   @default(now())
   questions     Question[]
 

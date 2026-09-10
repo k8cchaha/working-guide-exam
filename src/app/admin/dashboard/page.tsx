@@ -5,8 +5,7 @@ import { logoutAction } from '@/actions/admin'
 import { ExamStatus, Exam, SavedList, SavedListMember } from '@prisma/client'
 import Link from 'next/link'
 import CreateExamForm from '@/components/CreateExamForm'
-import CreateQuestionForm from '@/components/CreateQuestionForm'
-import QuestionList from '@/components/QuestionList'
+import BankManagerPanel from '@/components/BankManagerPanel'
 import type { SavedListData } from '@/components/CreateExamForm'
 
 export default async function DashboardPage() {
@@ -39,9 +38,6 @@ export default async function DashboardPage() {
     members: l.members,
   }))
 
-  const myBanks = banks
-    .filter((b) => b.adminUsername === session.username)
-    .map((b) => ({ id: b.id, name: b.name }))
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -65,13 +61,10 @@ export default async function DashboardPage() {
           </section>
 
           <section className="bg-white rounded-2xl shadow-sm p-6">
-            <h2 className="text-xl font-semibold mb-4">建立新考題</h2>
-            <CreateQuestionForm myBanks={myBanks} />
+            <h2 className="text-xl font-semibold mb-4">題庫管理</h2>
+            <BankManagerPanel banks={banks} currentAdmin={session.username} />
           </section>
         </div>
-
-        {/* 考題庫 */}
-        <QuestionList banks={banks} currentAdmin={session.username} />
 
         {/* 我的測驗 */}
         {exams.length > 0 && (
