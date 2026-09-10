@@ -5,17 +5,19 @@ import { useRouter } from 'next/navigation'
 import { createQuestionAction } from '@/actions/admin'
 import type { OptionInput } from '@/actions/admin'
 
-type QuestionType = 'single' | 'multiple' | 'short_answer'
+type QuestionType = 'single' | 'multiple' | 'true_false' | 'short_answer'
 
 const TYPE_LABELS: Record<QuestionType, string> = {
   single: '單選題',
   multiple: '複選題',
+  true_false: '是非題',
   short_answer: '問答題',
 }
 
 const DEFAULT_POINTS: Record<QuestionType, number> = {
   single: 3,
   multiple: 5,
+  true_false: 3,
   short_answer: 15,
 }
 
@@ -32,6 +34,7 @@ export default function CreateQuestionForm() {
     { text: '', isCorrect: false },
     { text: '', isCorrect: false },
   ])
+  const [trueFalseAnswer, setTrueFalseAnswer] = useState<'是' | '否' | ''>('')
   const [gradingHint, setGradingHint] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -40,6 +43,7 @@ export default function CreateQuestionForm() {
   function handleTypeChange(t: QuestionType) {
     setType(t)
     setPoints(DEFAULT_POINTS[t])
+    setTrueFalseAnswer('')
     setError('')
   }
 
@@ -57,20 +61,28 @@ export default function CreateQuestionForm() {
 
   const canSubmit =
     text.trim().length > 0 &&
-    (!needsOptions || (filledOptions.length >= 2 && hasCorrect))
+    (type === 'true_false' ? trueFalseAnswer !== '' :
+     type === 'short_answer' ? true :
+     filledOptions.length >= 2 && hasCorrect)
 
   async function handleSubmit() {
     if (!canSubmit) return
     setSubmitting(true)
     setError('')
 
-    const optionData: OptionInput[] | undefined = needsOptions
-      ? filledOptions.map((o, i) => ({
-          id: String.fromCharCode(65 + i),
-          text: o.text.trim(),
-          isCorrect: o.isCorrect,
-        }))
-      : undefined
+    let optionData: OptionInput[] | undefined
+    if (type === 'true_false') {
+      optionData = [
+        { id: 'A', text: '是', isCorrect: trueFalseAnswer === '是' },
+        { id: 'B', text: '否', isCorrect: trueFalseAnswer === '否' },
+      ]
+    } else if (needsOptions) {
+      optionData = filledOptions.map((o, i) => ({
+        id: String.fromCharCode(65 + i),
+        text: o.text.trim(),
+        isCorrect: o.isCorrect,
+      }))
+    }
 
     const result = await createQuestionAction({
       type, text, points, isBonus, isShared,
@@ -87,6 +99,7 @@ export default function CreateQuestionForm() {
     // reset form
     setText('')
     setGradingHint('')
+    setTrueFalseAnswer('')
     setOptions([{ text: '', isCorrect: false }, { text: '', isCorrect: false }])
     setIsBonus(false)
     setIsShared(false)
@@ -183,6 +196,29 @@ export default function CreateQuestionForm() {
           {filledOptions.length >= 2 && !hasCorrect && (
             <p className="text-xs text-amber-600 mt-1">請標示至少一個正確答案</p>
           )}
+        </div>
+      )}
+
+      {/* 是非題正確答案 */}
+      {type === 'true_false' && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">正確答案</label>
+          <div className="flex gap-3">
+            {(['是', '否'] as const).map((val) => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => setTrueFalseAnswer(val)}
+                className={`px-8 py-2 rounded-lg text-sm font-medium border transition ${
+                  trueFalseAnswer === val
+                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'
+                }`}
+              >
+                {val}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

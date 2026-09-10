@@ -24,6 +24,7 @@ interface Props {
 const TYPE_LABEL: Record<string, string> = {
   single: '單選',
   multiple: '複選',
+  true_false: '是非',
   short_answer: '問答',
 }
 
