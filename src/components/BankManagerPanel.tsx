@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { deleteQuestionAction, toggleBankSharedAction, deleteBankAction } from '@/actions/admin'
+import { deleteQuestionAction, deleteBankAction, updateBankAction } from '@/actions/admin'
 import CreateBankModal from './CreateBankModal'
 
 export interface QuestionData {
@@ -37,13 +37,115 @@ const TYPE_LABEL: Record<string, string> = {
   short_answer: '問答',
 }
 
+// ── Settings modal ────────────────────────────────────────────────────────────
+
+function BankSettingsModal({
+  bank,
+  onSave,
+  onClose,
+}: {
+  bank: BankData
+  onSave: (updated: Pick<BankData, 'id' | 'name' | 'isShared' | 'questionOrder'>) => void
+  onClose: () => void
+}) {
+  const [name, setName] = useState(bank.name)
+  const [isShared, setIsShared] = useState(bank.isShared)
+  const [questionOrder, setQuestionOrder] = useState<'sequential' | 'random'>(
+    bank.questionOrder === 'sequential' ? 'sequential' : 'random'
+  )
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleSave() {
+    if (!name.trim()) { setError('請輸入題庫名稱'); return }
+    setSaving(true)
+    setError('')
+    const result = await updateBankAction(bank.id, { name: name.trim(), isShared, questionOrder })
+    if (result.error) {
+      setError(result.error)
+      setSaving(false)
+      return
+    }
+    onSave({ id: bank.id, name: name.trim(), isShared, questionOrder })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4">
+        <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b">
+          <h2 className="text-lg font-semibold text-gray-800">題庫設定</h2>
+          <button type="button" onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-2xl leading-none px-1">
+            ×
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">題庫名稱</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
+            />
+          </div>
+
+          <label className="flex items-center gap-2 text-sm text-gray-700 select-none">
+            <input type="checkbox" checked={isShared}
+              onChange={(e) => setIsShared(e.target.checked)}
+              className="accent-indigo-600" />
+            🌐 開放共用給其他 Admin
+          </label>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">題目出現順序</label>
+            <div className="flex gap-3">
+              {([
+                { value: 'sequential', label: '📋 依序' },
+                { value: 'random', label: '🔀 隨機' },
+              ] as const).map(({ value, label }) => (
+                <button key={value} type="button"
+                  onClick={() => setQuestionOrder(value)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium border transition ${
+                    questionOrder === value
+                      ? 'bg-indigo-600 text-white border-indigo-600'
+                      : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'
+                  }`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+        </div>
+
+        <div className="flex items-center justify-between px-6 py-4 border-t">
+          <button type="button" onClick={onClose}
+            className="text-sm text-gray-500 hover:text-gray-700">
+            取消
+          </button>
+          <button type="button" onClick={handleSave} disabled={saving || !name.trim()}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed">
+            {saving ? '儲存中…' : '儲存'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Bank card ─────────────────────────────────────────────────────────────────
+
 function BankCard({
-  bank, isOwn, onDeleteQuestion, onToggleShared, onDeleteBank,
+  bank, isOwn, onDeleteQuestion, onSettings, onDeleteBank,
 }: {
   bank: BankData
   isOwn: boolean
   onDeleteQuestion: (bankId: string, qId: string) => void
-  onToggleShared: (bankId: string, current: boolean) => void
+  onSettings: (bank: BankData) => void
   onDeleteBank: (bankId: string) => void
 }) {
   const [expanded, setExpanded] = useState(false)
@@ -78,9 +180,9 @@ function BankCard({
           {isOwn && (
             <>
               <button type="button"
-                onClick={() => onToggleShared(bank.id, bank.isShared)}
+                onClick={() => onSettings(bank)}
                 className="text-xs text-indigo-600 hover:underline whitespace-nowrap">
-                {bank.isShared ? '取消共用' : '設為共用'}
+                設定
               </button>
               <button type="button"
                 onClick={() => {
@@ -130,10 +232,13 @@ function BankCard({
   )
 }
 
+// ── Panel ─────────────────────────────────────────────────────────────────────
+
 export default function BankManagerPanel({ banks: initial, currentAdmin }: Props) {
   const router = useRouter()
   const [banks, setBanks] = useState<BankData[]>(initial)
-  const [modalOpen, setModalOpen] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
+  const [settingsBank, setSettingsBank] = useState<BankData | null>(null)
 
   function handleDeleteQuestion(bankId: string, qId: string) {
     setBanks((prev) => prev.map((b) =>
@@ -141,18 +246,20 @@ export default function BankManagerPanel({ banks: initial, currentAdmin }: Props
     ))
   }
 
-  async function handleToggleShared(bankId: string, current: boolean) {
-    await toggleBankSharedAction(bankId, !current)
-    setBanks((prev) => prev.map((b) => b.id === bankId ? { ...b, isShared: !current } : b))
-  }
-
   async function handleDeleteBank(bankId: string) {
     await deleteBankAction(bankId)
     setBanks((prev) => prev.filter((b) => b.id !== bankId))
   }
 
-  function handleModalDone() {
-    setModalOpen(false)
+  function handleSettingsSave(updated: Pick<BankData, 'id' | 'name' | 'isShared' | 'questionOrder'>) {
+    setBanks((prev) => prev.map((b) =>
+      b.id === updated.id ? { ...b, ...updated } : b
+    ))
+    setSettingsBank(null)
+  }
+
+  function handleCreateDone() {
+    setCreateOpen(false)
     router.refresh()
   }
 
@@ -161,7 +268,7 @@ export default function BankManagerPanel({ banks: initial, currentAdmin }: Props
 
   return (
     <div className="space-y-4">
-      <button type="button" onClick={() => setModalOpen(true)}
+      <button type="button" onClick={() => setCreateOpen(true)}
         className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2.5 rounded-xl transition">
         ＋ 建立新題庫
       </button>
@@ -177,7 +284,7 @@ export default function BankManagerPanel({ banks: initial, currentAdmin }: Props
                 {myBanks.map((bank) => (
                   <BankCard key={bank.id} bank={bank} isOwn
                     onDeleteQuestion={handleDeleteQuestion}
-                    onToggleShared={handleToggleShared}
+                    onSettings={setSettingsBank}
                     onDeleteBank={handleDeleteBank}
                   />
                 ))}
@@ -192,7 +299,7 @@ export default function BankManagerPanel({ banks: initial, currentAdmin }: Props
                 {sharedBanks.map((bank) => (
                   <BankCard key={bank.id} bank={bank} isOwn={false}
                     onDeleteQuestion={handleDeleteQuestion}
-                    onToggleShared={handleToggleShared}
+                    onSettings={setSettingsBank}
                     onDeleteBank={handleDeleteBank}
                   />
                 ))}
@@ -202,8 +309,16 @@ export default function BankManagerPanel({ banks: initial, currentAdmin }: Props
         </>
       )}
 
-      {modalOpen && (
-        <CreateBankModal onDone={handleModalDone} onClose={() => setModalOpen(false)} />
+      {createOpen && (
+        <CreateBankModal onDone={handleCreateDone} onClose={() => setCreateOpen(false)} />
+      )}
+
+      {settingsBank && (
+        <BankSettingsModal
+          bank={settingsBank}
+          onSave={handleSettingsSave}
+          onClose={() => setSettingsBank(null)}
+        />
       )}
     </div>
   )

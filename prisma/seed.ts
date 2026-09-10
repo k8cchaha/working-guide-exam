@@ -33,7 +33,7 @@ async function main() {
       text: q.text,
       points: q.points,
       isBonus: q.isBonus,
-      options: q.options ?? undefined,
+      options: q.options ? JSON.parse(JSON.stringify(q.options)) : undefined,
       gradingHint: q.gradingHint ?? null,
     })),
   })

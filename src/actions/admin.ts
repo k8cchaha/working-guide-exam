@@ -164,6 +164,31 @@ export async function toggleBankSharedAction(bankId: string, isShared: boolean) 
   return { ok: true }
 }
 
+export async function updateBankAction(
+  bankId: string,
+  params: { name: string; isShared: boolean; questionOrder: string }
+) {
+  const session = await getAdminSession()
+  if (!session) return { error: '未授權' }
+  if (!params.name.trim()) return { error: '請輸入題庫名稱' }
+
+  const bank = await prisma.questionBank.findFirst({
+    where: { id: bankId, adminUsername: session.username },
+  })
+  if (!bank) return { error: '題庫不存在' }
+
+  try {
+    const updated = await prisma.questionBank.update({
+      where: { id: bankId },
+      data: { name: params.name.trim(), isShared: params.isShared, questionOrder: params.questionOrder },
+    })
+    return { ok: true, bank: updated }
+  } catch (e: unknown) {
+    if ((e as { code?: string })?.code === 'P2002') return { error: '題庫名稱已存在' }
+    throw e
+  }
+}
+
 export async function deleteBankAction(bankId: string) {
   const session = await getAdminSession()
   if (!session) return { error: '未授權' }
