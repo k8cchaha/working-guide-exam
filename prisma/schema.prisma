@@ -87,6 +87,7 @@ model Question {
   isBonus     Boolean      @default(false)
   options     Json?
   gradingHint String?
+  sortOrder   Int          @default(0)
   createdAt   DateTime     @default(now())
   bank        QuestionBank @relation(fields: [bankId], references: [id], onDelete: Cascade)
 }

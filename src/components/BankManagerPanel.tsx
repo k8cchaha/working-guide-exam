@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { deleteQuestionAction, deleteBankAction, updateBankAction } from '@/actions/admin'
+import { deleteBankAction, updateBankAction } from '@/actions/admin'
 import CreateBankModal from './CreateBankModal'
+import ManageQuestionsModal from './ManageQuestionsModal'
 
 export interface QuestionData {
   id: string
@@ -11,7 +12,9 @@ export interface QuestionData {
   text: string
   points: number
   isBonus: boolean
+  options: unknown
   gradingHint: string | null
+  sortOrder: number
   createdAt: Date
 }
 
@@ -196,95 +199,50 @@ function DeleteBankModal({
 // ── Bank card ─────────────────────────────────────────────────────────────────
 
 function BankCard({
-  bank, isOwn, onDeleteQuestion, onSettings,
+  bank, isOwn, onSettings, onCardClick,
 }: {
   bank: BankData
   isOwn: boolean
-  onDeleteQuestion: (bankId: string, qId: string) => void
   onSettings: (bank: BankData) => void
+  onCardClick: (bank: BankData) => void
 }) {
-  const [expanded, setExpanded] = useState(false)
-  const [deletingQId, setDeletingQId] = useState('')
-
   const totalScore = bank.questions
     .filter((q) => !q.isBonus)
     .reduce((sum, q) => sum + q.points, 0)
 
-  async function handleDeleteQ(qId: string) {
-    setDeletingQId(qId)
-    await deleteQuestionAction(qId)
-    onDeleteQuestion(bank.id, qId)
-    setDeletingQId('')
-  }
-
   return (
-    <div className="border rounded-xl overflow-hidden">
-      {/* Card header — click to expand */}
-      <div
-        className="p-3 bg-gray-50 hover:bg-gray-100 transition"
-        onClick={() => setExpanded((v) => !v)}
-      >
-        {/* Row 1: name (left) + shared badge (right) */}
-        <div className="flex items-center justify-between gap-2 mb-1.5">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="font-medium text-sm text-gray-800 truncate">{bank.name}</span>
-            {!isOwn && <span className="text-xs text-gray-400 shrink-0">由 {bank.adminUsername} 提供</span>}
-          </div>
-          {bank.isShared
-            ? <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full shrink-0">🌐 共用中</span>
-            : isOwn && <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full shrink-0">🔒 未共用</span>
-          }
+    <div
+      className="border rounded-xl p-3 bg-gray-50 hover:bg-gray-100 transition cursor-pointer"
+      onClick={() => onCardClick(bank)}
+    >
+      {/* Row 1: name (left) + shared badge (right) */}
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="font-medium text-sm text-gray-800 truncate">{bank.name}</span>
+          {!isOwn && <span className="text-xs text-gray-400 shrink-0">由 {bank.adminUsername} 提供</span>}
         </div>
-
-        {/* Row 2: stats + actions */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
-            <span>總分 <span className="font-medium text-gray-700">{totalScore}</span> 分</span>
-            <span>{bank.questions.length} 題</span>
-            <span>{bank.questionOrder === 'sequential' ? '📋 依序' : '🔀 隨機'}</span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-            {isOwn && (
-              <button type="button" onClick={() => onSettings(bank)}
-                className="text-xs text-indigo-600 hover:underline whitespace-nowrap">
-                設定
-              </button>
-            )}
-            <span className="text-gray-300 text-xs">{expanded ? '▲' : '▼'}</span>
-          </div>
-        </div>
+        {bank.isShared
+          ? <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full shrink-0">🌐 共用中</span>
+          : isOwn && <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full shrink-0">🔒 未共用</span>
+        }
       </div>
 
-      {/* Expanded question list */}
-      {expanded && (
-        bank.questions.length > 0 ? (
-          <div className="divide-y">
-            {bank.questions.map((q) => (
-              <div key={q.id} className="flex items-start justify-between gap-3 px-4 py-2.5">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                    <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">
-                      {TYPE_LABEL[q.type] ?? q.type}
-                    </span>
-                    <span className="text-xs text-gray-400">{q.points} 分</span>
-                    {q.isBonus && <span className="text-xs text-amber-600 font-medium">⭐ 加分</span>}
-                  </div>
-                  <p className="text-sm text-gray-800 line-clamp-1">{q.text}</p>
-                </div>
-                {isOwn && (
-                  <button type="button" onClick={() => handleDeleteQ(q.id)}
-                    disabled={deletingQId === q.id}
-                    className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50 shrink-0 mt-0.5">
-                    {deletingQId === q.id ? '…' : '刪除'}
-                  </button>
-                )}
-              </div>
-            ))}
+      {/* Row 2: stats + settings button */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
+          <span>總分 <span className="font-medium text-gray-700">{totalScore}</span> 分</span>
+          <span>{bank.questions.length} 題</span>
+          <span>{bank.questionOrder === 'sequential' ? '📋 依序' : '🔀 隨機'}</span>
+        </div>
+        {isOwn && (
+          <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+            <button type="button" onClick={() => onSettings(bank)}
+              className="text-xs text-indigo-600 hover:underline whitespace-nowrap">
+              設定
+            </button>
           </div>
-        ) : (
-          <p className="px-4 py-3 text-sm text-gray-400">（尚無題目）</p>
-        )
-      )}
+        )}
+      </div>
     </div>
   )
 }
@@ -297,12 +255,7 @@ export default function BankManagerPanel({ banks: initial, currentAdmin }: Props
   const [createOpen, setCreateOpen] = useState(false)
   const [settingsBank, setSettingsBank] = useState<BankData | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<BankData | null>(null)
-
-  function handleDeleteQuestion(bankId: string, qId: string) {
-    setBanks((prev) => prev.map((b) =>
-      b.id === bankId ? { ...b, questions: b.questions.filter((q) => q.id !== qId) } : b
-    ))
-  }
+  const [managingBank, setManagingBank] = useState<BankData | null>(null)
 
   async function handleDeleteConfirm(bankId: string, password: string): Promise<string | null> {
     const result = await deleteBankAction(bankId, password)
@@ -315,6 +268,15 @@ export default function BankManagerPanel({ banks: initial, currentAdmin }: Props
   function handleSettingsSave(updated: Pick<BankData, 'id' | 'name' | 'isShared' | 'questionOrder'>) {
     setBanks((prev) => prev.map((b) => b.id === updated.id ? { ...b, ...updated } : b))
     setSettingsBank(null)
+  }
+
+  function handleManageClose(updatedQuestions: QuestionData[]) {
+    if (managingBank) {
+      setBanks((prev) => prev.map((b) =>
+        b.id === managingBank.id ? { ...b, questions: updatedQuestions } : b
+      ))
+    }
+    setManagingBank(null)
   }
 
   function handleCreateDone() {
@@ -342,8 +304,8 @@ export default function BankManagerPanel({ banks: initial, currentAdmin }: Props
               <div className="space-y-2">
                 {myBanks.map((bank) => (
                   <BankCard key={bank.id} bank={bank} isOwn
-                    onDeleteQuestion={handleDeleteQuestion}
                     onSettings={setSettingsBank}
+                    onCardClick={setManagingBank}
                   />
                 ))}
               </div>
@@ -356,8 +318,8 @@ export default function BankManagerPanel({ banks: initial, currentAdmin }: Props
               <div className="space-y-2">
                 {sharedBanks.map((bank) => (
                   <BankCard key={bank.id} bank={bank} isOwn={false}
-                    onDeleteQuestion={handleDeleteQuestion}
                     onSettings={setSettingsBank}
+                    onCardClick={setManagingBank}
                   />
                 ))}
               </div>
@@ -384,6 +346,14 @@ export default function BankManagerPanel({ banks: initial, currentAdmin }: Props
           bank={deleteTarget}
           onConfirm={handleDeleteConfirm}
           onClose={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {managingBank && (
+        <ManageQuestionsModal
+          bank={managingBank}
+          readOnly={managingBank.adminUsername !== currentAdmin}
+          onClose={handleManageClose}
         />
       )}
     </div>

@@ -26,7 +26,7 @@ export default async function DashboardPage() {
     prisma.questionBank.findMany({
       where: { OR: [{ adminUsername: session.username }, { isShared: true }] },
       orderBy: { createdAt: 'desc' },
-      include: { questions: { orderBy: { createdAt: 'asc' } } },
+      include: { questions: { orderBy: { sortOrder: 'asc' } } },
     }),
   ])
 

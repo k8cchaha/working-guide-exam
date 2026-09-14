@@ -223,6 +223,12 @@ export async function createQuestionAction(params: {
   })
   if (!bank) return { error: '題庫不存在' }
 
+  const agg = await prisma.question.aggregate({
+    where: { bankId: params.bankId },
+    _max: { sortOrder: true },
+  })
+  const sortOrder = (agg._max.sortOrder ?? -1) + 1
+
   const q = await prisma.question.create({
     data: {
       bankId: params.bankId,
@@ -232,9 +238,64 @@ export async function createQuestionAction(params: {
       isBonus: params.isBonus,
       options: params.options ?? undefined,
       gradingHint: params.gradingHint?.trim() || null,
+      sortOrder,
     },
   })
   return { ok: true, question: q }
+}
+
+export async function updateQuestionAction(
+  questionId: string,
+  params: {
+    type: string
+    text: string
+    points: number
+    isBonus: boolean
+    options?: OptionInput[]
+    gradingHint?: string
+  }
+) {
+  const session = await getAdminSession()
+  if (!session) return { error: '未授權' }
+  if (!params.text.trim()) return { error: '請輸入題目內容' }
+
+  const existing = await prisma.question.findFirst({
+    where: { id: questionId, bank: { adminUsername: session.username } },
+  })
+  if (!existing) return { error: '題目不存在' }
+
+  const q = await prisma.question.update({
+    where: { id: questionId },
+    data: {
+      type: params.type,
+      text: params.text.trim(),
+      points: params.points,
+      isBonus: params.isBonus,
+      options: params.options ?? undefined,
+      gradingHint: params.gradingHint?.trim() || null,
+    },
+  })
+  return { ok: true, question: q }
+}
+
+export async function updateQuestionOrdersAction(bankId: string, orderedIds: string[]) {
+  const session = await getAdminSession()
+  if (!session) return { error: '未授權' }
+
+  const bank = await prisma.questionBank.findFirst({
+    where: { id: bankId, adminUsername: session.username },
+  })
+  if (!bank) return { error: '題庫不存在' }
+
+  await prisma.$transaction(
+    orderedIds.map((id, i) =>
+      prisma.question.updateMany({
+        where: { id, bankId },
+        data: { sortOrder: i },
+      })
+    )
+  )
+  return { ok: true }
 }
 
 export async function deleteQuestionAction(questionId: string) {
