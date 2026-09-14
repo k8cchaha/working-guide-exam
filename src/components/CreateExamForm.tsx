@@ -40,8 +40,8 @@ export default function CreateExamForm({ savedLists: initialLists, banks }: Prop
   const [selectedListId, setSelectedListId] = useState('')
   const [deletingId, setDeletingId] = useState('')
 
-  // Bank selection
-  const [selectedBankId, setSelectedBankId] = useState('')
+  // Bank selection: null = not chosen yet, '' = explicitly no bank, other = bank id
+  const [selectedBankId, setSelectedBankId] = useState<string | null>(null)
 
   // Save-to-list state
   const [showSave, setShowSave] = useState(false)
@@ -78,11 +78,13 @@ export default function CreateExamForm({ savedLists: initialLists, banks }: Prop
 
   function handleCreate() {
     if (mode === 'SAVED_LIST' || mode === 'GOOGLE') return
+    if (selectedBankId === null) { setError('請選擇題庫'); return }
     const members = parsedMembers()
     if (members.length === 0) { setError('請至少輸入一位成員'); return }
     setError('')
     startTransition(async () => {
-      const result = await createExamAction(passingScore, mode, members, selectedBankId || undefined)
+      const bankId = selectedBankId !== '' && selectedBankId !== '__none__' ? selectedBankId : undefined
+      const result = await createExamAction(passingScore, mode, members, bankId)
       if (result?.error) setError(result.error)
     })
   }
@@ -141,21 +143,23 @@ export default function CreateExamForm({ savedLists: initialLists, banks }: Prop
       {/* 題庫選擇 */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">題庫</label>
-        {banks.length === 0 ? (
-          <p className="text-sm text-gray-400">尚無可用題庫，將使用預設題目。</p>
-        ) : (
-          <select
-            value={selectedBankId}
-            onChange={(e) => setSelectedBankId(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition cursor-pointer w-full"
-          >
-            <option value="">預設題目（Jira 工作指南）</option>
-            {banks.map((bank) => (
-              <option key={bank.id} value={bank.id}>
-                {bank.name}（{bank.questionCount} 題）
-              </option>
-            ))}
-          </select>
+        <select
+          value={selectedBankId ?? ''}
+          onChange={(e) => setSelectedBankId(e.target.value)}
+          className={`border rounded-lg px-3 py-2 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition cursor-pointer w-full ${
+            selectedBankId === null ? 'border-amber-400 text-gray-400' : 'border-gray-300'
+          }`}
+        >
+          <option value="" disabled>── 請選擇題庫 ──</option>
+          <option value="__none__">不使用題庫（使用預設題目）</option>
+          {banks.map((bank) => (
+            <option key={bank.id} value={bank.id}>
+              {bank.name}（{bank.questionCount} 題）
+            </option>
+          ))}
+        </select>
+        {selectedBankId === null && (
+          <p className="text-xs text-amber-600 mt-1">請選擇題庫後才能建立測驗</p>
         )}
       </div>
 
@@ -365,8 +369,8 @@ export default function CreateExamForm({ savedLists: initialLists, banks }: Prop
         <button
           type="button"
           onClick={handleCreate}
-          disabled={isPending}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded-lg transition disabled:opacity-50"
+          disabled={isPending || selectedBankId === null}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isPending ? '建立中…' : '建立測驗 →'}
         </button>
