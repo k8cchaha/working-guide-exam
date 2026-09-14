@@ -44,7 +44,7 @@ export default function CreateExamForm({ savedLists: initialLists, banks }: Prop
 
   // Bank selection: null = not chosen yet, other = bank id
   const [selectedBankId, setSelectedBankId] = useState<string | null>(null)
-  const [questionOrder, setQuestionOrder] = useState<'sequential' | 'random'>('random')
+  const [questionOrder, setQuestionOrder] = useState<'sequential' | 'random'>('sequential')
 
   const selectedBank = banks.find((b) => b.id === selectedBankId) ?? null
 
