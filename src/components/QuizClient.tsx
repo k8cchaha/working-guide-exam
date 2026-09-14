@@ -10,9 +10,10 @@ import { getAvatarById } from '@/lib/avatars'
 interface Props {
   examId: string
   questions: Question[]
+  questionOrder?: string
 }
 
-export default function QuizClient({ examId, questions }: Props) {
+export default function QuizClient({ examId, questions, questionOrder = 'random' }: Props) {
   const router = useRouter()
   const [memberId, setMemberId] = useState('')
   const [avatarId, setAvatarId] = useState('')
@@ -31,7 +32,7 @@ export default function QuizClient({ examId, questions }: Props) {
     if (data.submitted) { router.replace(`/exam/${examId}/result`); return }
     setMemberId(data.memberId)
     setAvatarId(data.avatarId)
-    setShuffled(shuffleQuestions(questions, data.memberId))
+    setShuffled(questionOrder === 'sequential' ? questions : shuffleQuestions(questions, data.memberId))
   }, [examId, questions, router])
 
   function setSingle(qid: string, optId: string) {

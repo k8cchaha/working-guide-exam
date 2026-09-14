@@ -23,7 +23,6 @@ export interface BankData {
   adminUsername: string
   name: string
   isShared: boolean
-  questionOrder: string
   createdAt: Date
   questions: QuestionData[]
 }
@@ -49,15 +48,12 @@ function BankSettingsModal({
   onClose,
 }: {
   bank: BankData
-  onSave: (updated: Pick<BankData, 'id' | 'name' | 'isShared' | 'questionOrder'>) => void
+  onSave: (updated: Pick<BankData, 'id' | 'name' | 'isShared'>) => void
   onDelete: (bank: BankData) => void
   onClose: () => void
 }) {
   const [name, setName] = useState(bank.name)
   const [isShared, setIsShared] = useState(bank.isShared)
-  const [questionOrder, setQuestionOrder] = useState<'sequential' | 'random'>(
-    bank.questionOrder === 'sequential' ? 'sequential' : 'random'
-  )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -65,9 +61,9 @@ function BankSettingsModal({
     if (!name.trim()) { setError('請輸入題庫名稱'); return }
     setSaving(true)
     setError('')
-    const result = await updateBankAction(bank.id, { name: name.trim(), isShared, questionOrder })
+    const result = await updateBankAction(bank.id, { name: name.trim(), isShared })
     if (result.error) { setError(result.error); setSaving(false); return }
-    onSave({ id: bank.id, name: name.trim(), isShared, questionOrder })
+    onSave({ id: bank.id, name: name.trim(), isShared })
   }
 
   return (
@@ -91,25 +87,6 @@ function BankSettingsModal({
               className="accent-indigo-600" />
             🌐 開放共用給其他 Admin
           </label>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">題目出現順序</label>
-            <div className="flex gap-3">
-              {([
-                { value: 'sequential', label: '📋 依序' },
-                { value: 'random', label: '🔀 隨機' },
-              ] as const).map(({ value, label }) => (
-                <button key={value} type="button" onClick={() => setQuestionOrder(value)}
-                  className={`flex-1 py-2 rounded-lg text-sm font-medium border transition ${
-                    questionOrder === value
-                      ? 'bg-indigo-600 text-white border-indigo-600'
-                      : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'
-                  }`}>
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
 
@@ -232,7 +209,6 @@ function BankCard({
         <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
           <span>總分 <span className="font-medium text-gray-700">{totalScore}</span> 分</span>
           <span>{bank.questions.length} 題</span>
-          <span>{bank.questionOrder === 'sequential' ? '📋 依序' : '🔀 隨機'}</span>
         </div>
         {isOwn && (
           <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -265,7 +241,7 @@ export default function BankManagerPanel({ banks: initial, currentAdmin }: Props
     return null
   }
 
-  function handleSettingsSave(updated: Pick<BankData, 'id' | 'name' | 'isShared' | 'questionOrder'>) {
+  function handleSettingsSave(updated: Pick<BankData, 'id' | 'name' | 'isShared'>) {
     setBanks((prev) => prev.map((b) => b.id === updated.id ? { ...b, ...updated } : b))
     setSettingsBank(null)
   }

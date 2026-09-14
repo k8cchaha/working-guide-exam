@@ -35,7 +35,8 @@ export async function createExamAction(
   passingScore: number,
   authMode: string,
   members: MemberInput[],
-  bankId?: string
+  bankId?: string,
+  questionOrder = 'random'
 ) {
   const session = await getAdminSession()
   if (!session) return { error: '未授權' }
@@ -46,6 +47,7 @@ export async function createExamAction(
       adminUsername: session.username,
       authMode,
       passingScore,
+      questionOrder,
       questionBankId: bankId || null,
       members: {
         create: members.map((m) => ({
@@ -142,7 +144,7 @@ export async function deleteSavedListAction(savedListId: string) {
 
 // ── QuestionBank ──────────────────────────────────────────────────────────────
 
-export async function createBankAction(name: string, isShared = false, questionOrder = 'random') {
+export async function createBankAction(name: string, isShared = false) {
   const session = await getAdminSession()
   if (!session) return { error: '未授權' }
   if (!name.trim()) return { error: '請輸入題庫名稱' }
@@ -150,7 +152,7 @@ export async function createBankAction(name: string, isShared = false, questionO
   const bank = await prisma.questionBank.upsert({
     where: { adminUsername_name: { adminUsername: session.username, name: name.trim() } },
     update: {},
-    create: { adminUsername: session.username, name: name.trim(), isShared, questionOrder },
+    create: { adminUsername: session.username, name: name.trim(), isShared },
   })
   return { ok: true, bank }
 }
@@ -168,7 +170,7 @@ export async function toggleBankSharedAction(bankId: string, isShared: boolean) 
 
 export async function updateBankAction(
   bankId: string,
-  params: { name: string; isShared: boolean; questionOrder: string }
+  params: { name: string; isShared: boolean }
 ) {
   const session = await getAdminSession()
   if (!session) return { error: '未授權' }
@@ -182,7 +184,7 @@ export async function updateBankAction(
   try {
     const updated = await prisma.questionBank.update({
       where: { id: bankId },
-      data: { name: params.name.trim(), isShared: params.isShared, questionOrder: params.questionOrder },
+      data: { name: params.name.trim(), isShared: params.isShared },
     })
     return { ok: true, bank: updated }
   } catch (e: unknown) {

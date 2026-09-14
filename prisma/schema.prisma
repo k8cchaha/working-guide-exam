@@ -13,6 +13,7 @@ model Exam {
   adminUsername  String        @default("")
   authMode       String        @default("NAME_ONLY")
   passingScore   Int
+  questionOrder  String        @default("random")
   status         ExamStatus    @default(ACTIVE)
   publishedAt    DateTime?
   createdAt      DateTime      @default(now())
@@ -73,7 +74,6 @@ model QuestionBank {
   adminUsername String
   name          String
   isShared      Boolean    @default(false)
-  questionOrder String     @default("random")
   createdAt     DateTime   @default(now())
   questions     Question[]
   exams         Exam[]

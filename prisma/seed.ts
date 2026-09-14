@@ -14,7 +14,6 @@ async function main() {
       adminUsername: ADMIN,
       name: BANK_NAME,
       isShared: false,
-      questionOrder: 'random',
     },
   })
 

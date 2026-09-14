@@ -31,7 +31,6 @@ export default function CreateBankModal({ onDone, onClose }: Props) {
   // Step 1
   const [bankName, setBankName] = useState('')
   const [isShared, setIsShared] = useState(false)
-  const [questionOrder, setQuestionOrder] = useState<'sequential' | 'random'>('random')
   const [step1Submitting, setStep1Submitting] = useState(false)
   const [step1Error, setStep1Error] = useState('')
 
@@ -64,7 +63,7 @@ export default function CreateBankModal({ onDone, onClose }: Props) {
     if (!bankName.trim()) { setStep1Error('請輸入題庫名稱'); return }
     setStep1Submitting(true)
     setStep1Error('')
-    const result = await createBankAction(bankName.trim(), isShared, questionOrder)
+    const result = await createBankAction(bankName.trim(), isShared)
     if (result.error || !result.bank) {
       setStep1Error(result.error ?? '建立題庫失敗')
       setStep1Submitting(false)
@@ -208,29 +207,6 @@ export default function CreateBankModal({ onDone, onClose }: Props) {
                   className="accent-indigo-600" />
                 🌐 開放共用給其他 Admin
               </label>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">題目出現順序</label>
-                <div className="flex gap-3">
-                  {([
-                    { value: 'sequential', label: '📋 依序' },
-                    { value: 'random', label: '🔀 隨機' },
-                  ] as const).map(({ value, label }) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => setQuestionOrder(value)}
-                      className={`flex-1 py-2.5 rounded-lg text-sm font-medium border transition ${
-                        questionOrder === value
-                          ? 'bg-indigo-600 text-white border-indigo-600'
-                          : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               {step1Error && <p className="text-red-500 text-sm">{step1Error}</p>}
             </>

@@ -31,5 +31,5 @@ export default async function QuizPage({
     }))
   }
 
-  return <QuizClient examId={examId} questions={questions} />
+  return <QuizClient examId={examId} questions={questions} questionOrder={exam.questionOrder} />
 }

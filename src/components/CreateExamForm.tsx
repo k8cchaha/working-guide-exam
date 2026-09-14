@@ -42,6 +42,7 @@ export default function CreateExamForm({ savedLists: initialLists, banks }: Prop
 
   // Bank selection: null = not chosen yet, other = bank id
   const [selectedBankId, setSelectedBankId] = useState<string | null>(null)
+  const [questionOrder, setQuestionOrder] = useState<'sequential' | 'random'>('random')
 
   // Save-to-list state
   const [showSave, setShowSave] = useState(false)
@@ -83,7 +84,7 @@ export default function CreateExamForm({ savedLists: initialLists, banks }: Prop
     if (members.length === 0) { setError('請至少輸入一位成員'); return }
     setError('')
     startTransition(async () => {
-      const result = await createExamAction(passingScore, mode, members, selectedBankId!)
+      const result = await createExamAction(passingScore, mode, members, selectedBankId!, questionOrder)
       if (result?.error) setError(result.error)
     })
   }
@@ -167,6 +168,30 @@ export default function CreateExamForm({ savedLists: initialLists, banks }: Prop
             )}
           </>
         )}
+      </div>
+
+      {/* 題目出現順序 */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">題目出現順序</label>
+        <div className="flex gap-3">
+          {([
+            { value: 'sequential', label: '📋 依序' },
+            { value: 'random', label: '🔀 隨機' },
+          ] as const).map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setQuestionOrder(value)}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium border transition ${
+                questionOrder === value
+                  ? 'bg-indigo-600 text-white border-indigo-600'
+                  : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* 合格分數 */}
