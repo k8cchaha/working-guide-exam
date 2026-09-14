@@ -17,6 +17,8 @@ export interface BankSummary {
   name: string
   questionCount: number
   adminUsername: string
+  totalScore: number
+  hasBonus: boolean
 }
 
 interface Props { savedLists: SavedListData[]; banks: BankSummary[] }
@@ -43,6 +45,14 @@ export default function CreateExamForm({ savedLists: initialLists, banks }: Prop
   // Bank selection: null = not chosen yet, other = bank id
   const [selectedBankId, setSelectedBankId] = useState<string | null>(null)
   const [questionOrder, setQuestionOrder] = useState<'sequential' | 'random'>('random')
+
+  const selectedBank = banks.find((b) => b.id === selectedBankId) ?? null
+
+  function handleBankChange(id: string) {
+    setSelectedBankId(id)
+    const bank = banks.find((b) => b.id === id)
+    if (bank) setPassingScore(Math.floor(bank.totalScore * 0.7))
+  }
 
   // Save-to-list state
   const [showSave, setShowSave] = useState(false)
@@ -151,7 +161,7 @@ export default function CreateExamForm({ savedLists: initialLists, banks }: Prop
           <>
             <select
               value={selectedBankId ?? ''}
-              onChange={(e) => setSelectedBankId(e.target.value)}
+              onChange={(e) => handleBankChange(e.target.value)}
               className={`border rounded-lg px-3 py-2 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition cursor-pointer w-full ${
                 selectedBankId === null ? 'border-amber-400 text-gray-400' : 'border-gray-300'
               }`}
@@ -201,11 +211,14 @@ export default function CreateExamForm({ savedLists: initialLists, banks }: Prop
           type="number"
           value={passingScore}
           min={0}
-          max={106}
           onChange={(e) => setPassingScore(Number(e.target.value))}
           className="w-28 border border-gray-300 rounded-lg px-3 py-2 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
         />
-        <span className="text-xs text-gray-400">（滿分 100，加分題可超過）</span>
+        {selectedBank && (
+          <span className="text-xs text-gray-400">
+            （滿分 {selectedBank.totalScore} 分{selectedBank.hasBonus ? '，加分題可超過' : ''}）
+          </span>
+        )}
       </div>
 
       {/* 模式選擇 */}

@@ -43,6 +43,8 @@ export default async function DashboardPage() {
     name: b.name,
     questionCount: b.questions.length,
     adminUsername: b.adminUsername,
+    totalScore: b.questions.filter((q) => !q.isBonus).reduce((sum, q) => sum + q.points, 0),
+    hasBonus: b.questions.some((q) => q.isBonus),
   }))
 
 
