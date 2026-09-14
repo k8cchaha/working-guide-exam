@@ -29,7 +29,7 @@ export default function CreateExamForm({ savedLists: initialLists, banks }: Prop
   const [error, setError] = useState('')
 
   const [mode, setMode] = useState<AuthMode>('NAME_ONLY')
-  const [passingScore, setPassingScore] = useState(80)
+  const [passingScore, setPassingScore] = useState<number | null>(null)
 
   // NAME_ONLY state
   const [nameText, setNameText] = useState('')
@@ -90,11 +90,12 @@ export default function CreateExamForm({ savedLists: initialLists, banks }: Prop
   function handleCreate() {
     if (mode === 'SAVED_LIST' || mode === 'GOOGLE') return
     if (selectedBankId === null) { setError('請選擇題庫'); return }
+    if (passingScore === null) { setError('請輸入合格分數'); return }
     const members = parsedMembers()
     if (members.length === 0) { setError('請至少輸入一位成員'); return }
     setError('')
     startTransition(async () => {
-      const result = await createExamAction(passingScore, mode, members, selectedBankId!, questionOrder)
+      const result = await createExamAction(passingScore!, mode, members, selectedBankId!, questionOrder)
       if (result?.error) setError(result.error)
     })
   }
@@ -209,10 +210,11 @@ export default function CreateExamForm({ savedLists: initialLists, banks }: Prop
         <label className="text-sm font-medium text-gray-700 shrink-0">合格分數</label>
         <input
           type="number"
-          value={passingScore}
+          value={passingScore ?? ''}
           min={0}
-          onChange={(e) => setPassingScore(Number(e.target.value))}
-          className="w-28 border border-gray-300 rounded-lg px-3 py-2 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
+          disabled={selectedBankId === null}
+          onChange={(e) => setPassingScore(e.target.value === '' ? null : Number(e.target.value))}
+          className="w-28 border border-gray-300 rounded-lg px-3 py-2 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
         />
         {selectedBank && (
           <span className="text-xs text-gray-400">
