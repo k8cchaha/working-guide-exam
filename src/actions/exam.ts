@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db'
 import { calculateAutoScore, calculateTotal } from '@/lib/scoring'
 import type { Question, Option } from '@/lib/questions'
+import { auth } from '@/auth'
 
 export async function startExamAction(
   examId: string,
@@ -68,4 +69,32 @@ export async function submitAnswersAction(
   })
 
   return { ok: true, autoScore }
+}
+
+export async function startGoogleMemberAction(examId: string, avatarId: string) {
+  const session = await auth()
+  if (!session?.user?.email) return { error: '請先使用 Google 帳號登入' }
+
+  const email = session.user.email
+
+  const exam = await prisma.exam.findUnique({ where: { id: examId } })
+  if (!exam || exam.status === 'PUBLISHED') return { error: '測驗不存在或已結束' }
+  if (exam.authMode !== 'GOOGLE') return { error: '此測驗不使用 Google 登入' }
+
+  let member = await prisma.member.findFirst({ where: { examId, googleEmail: email } })
+  if (!member) {
+    try {
+      member = await prisma.member.create({
+        data: { examId, name: email, googleEmail: email },
+      })
+    } catch {
+      member = await prisma.member.findFirst({ where: { examId, googleEmail: email } })
+      if (!member) return { error: '建立成員失敗，請重試' }
+    }
+  }
+
+  const existing = await prisma.submission.findUnique({ where: { memberId: member.id } })
+  if (existing) return { error: 'already_submitted' }
+
+  return { ok: true, memberId: member.id, memberName: member.name }
 }

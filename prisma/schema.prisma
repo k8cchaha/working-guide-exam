@@ -24,14 +24,16 @@ model Exam {
 }
 
 model Member {
-  id         String      @id @default(cuid())
-  examId     String
-  name       String
-  password   String?
-  exam       Exam        @relation(fields: [examId], references: [id], onDelete: Cascade)
-  submission Submission?
+  id          String      @id @default(cuid())
+  examId      String
+  name        String
+  password    String?
+  googleEmail String?
+  exam        Exam        @relation(fields: [examId], references: [id], onDelete: Cascade)
+  submission  Submission?
 
   @@unique([examId, name])
+  @@unique([examId, googleEmail])
 }
 
 model Submission {

@@ -40,7 +40,7 @@ export async function createExamAction(
 ) {
   const session = await getAdminSession()
   if (!session) return { error: '未授權' }
-  if (members.length === 0) return { error: '請至少輸入一位成員' }
+  if (authMode !== 'GOOGLE' && members.length === 0) return { error: '請至少輸入一位成員' }
 
   const exam = await prisma.exam.create({
     data: {

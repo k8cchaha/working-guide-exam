@@ -88,11 +88,11 @@ export default function CreateExamForm({ savedLists: initialLists, banks }: Prop
   // ── submit exam ────────────────────────────────────────────────────────────
 
   function handleCreate() {
-    if (mode === 'SAVED_LIST' || mode === 'GOOGLE') return
+    if (mode === 'SAVED_LIST') return
     if (selectedBankId === null) { setError('請選擇題庫'); return }
     if (passingScore === null) { setError('請輸入合格分數'); return }
-    const members = parsedMembers()
-    if (members.length === 0) { setError('請至少輸入一位成員'); return }
+    const members = mode === 'GOOGLE' ? [] : parsedMembers()
+    if (mode !== 'GOOGLE' && members.length === 0) { setError('請至少輸入一位成員'); return }
     setError('')
     startTransition(async () => {
       const result = await createExamAction(passingScore!, mode, members, selectedBankId!, questionOrder)
@@ -233,7 +233,7 @@ export default function CreateExamForm({ savedLists: initialLists, banks }: Prop
         >
           <option value="NAME_ONLY">名稱清單</option>
           <option value="NAME_PASSWORD">名稱清單 + 密碼</option>
-          <option value="GOOGLE">綁定 Google 帳號（即將推出）</option>
+          <option value="GOOGLE">Google 帳號（開放登入）</option>
           <option value="SAVED_LIST">使用常用清單</option>
         </select>
       </div>
@@ -312,11 +312,14 @@ export default function CreateExamForm({ savedLists: initialLists, banks }: Prop
         </div>
       )}
 
-      {/* ── GOOGLE 佔位 ────────────────────────────────────────────────────── */}
+      {/* ── GOOGLE ─────────────────────────────────────────────────────────── */}
       {mode === 'GOOGLE' && (
-        <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl text-blue-700 text-sm">
-          <span className="text-xl">🔒</span>
-          <span>Google 帳號綁定功能即將推出，目前尚未開放。</span>
+        <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-xl border border-blue-200 text-blue-700 text-sm">
+          <span className="text-xl shrink-0">🔒</span>
+          <div>
+            <p className="font-medium mb-0.5">開放 Google 帳號登入</p>
+            <p className="text-blue-600 text-xs">任何人點擊測驗連結後，使用 Google 帳號登入即可參加。無需預先設定成員名單。</p>
+          </div>
         </div>
       )}
 
@@ -411,7 +414,7 @@ export default function CreateExamForm({ savedLists: initialLists, banks }: Prop
 
       {/* ── 建立測驗按鈕 ──────────────────────────────────────────────────── */}
       {error && <p className="text-red-500 text-sm">{error}</p>}
-      {canEdit && (
+      {(canEdit || mode === 'GOOGLE') && (
         <button
           type="button"
           onClick={handleCreate}
