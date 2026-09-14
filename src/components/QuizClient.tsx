@@ -141,8 +141,8 @@ export default function QuizClient({ examId, questions }: Props) {
               </div>
             </div>
 
-            {/* 單選 */}
-            {q.type === 'single' && q.options && (
+            {/* 單選 / 是非 */}
+            {(q.type === 'single' || q.type === 'true_false') && q.options && (
               <div className="space-y-2">
                 {q.options.map((opt) => (
                   <label

@@ -6,7 +6,7 @@ import { ExamStatus, Exam, SavedList, SavedListMember } from '@prisma/client'
 import Link from 'next/link'
 import CreateExamForm from '@/components/CreateExamForm'
 import BankManagerPanel from '@/components/BankManagerPanel'
-import type { SavedListData } from '@/components/CreateExamForm'
+import type { SavedListData, BankSummary } from '@/components/CreateExamForm'
 
 export default async function DashboardPage() {
   const session = await getAdminSession()
@@ -38,6 +38,13 @@ export default async function DashboardPage() {
     members: l.members,
   }))
 
+  const banksData: BankSummary[] = banks.map((b) => ({
+    id: b.id,
+    name: b.name,
+    questionCount: b.questions.length,
+    adminUsername: b.adminUsername,
+  }))
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -57,7 +64,7 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <section className="bg-white rounded-2xl shadow-sm p-6">
             <h2 className="text-xl font-semibold mb-4">建立新測驗</h2>
-            <CreateExamForm savedLists={savedListsData} />
+            <CreateExamForm savedLists={savedListsData} banks={banksData} />
           </section>
 
           <section className="bg-white rounded-2xl shadow-sm p-6">

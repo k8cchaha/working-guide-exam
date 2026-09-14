@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/db'
 import { calculateAutoScore, calculateTotal } from '@/lib/scoring'
+import type { Question, Option } from '@/lib/questions'
 
 export async function startExamAction(
   examId: string,
@@ -40,7 +41,26 @@ export async function submitAnswersAction(
   const exam = await prisma.exam.findUnique({ where: { id: examId } })
   if (!exam || exam.status === 'PUBLISHED') return { error: '測驗不存在或已結束' }
 
-  const autoScore = calculateAutoScore(answers)
+  let bankQuestions: Question[] | undefined
+  if (exam.questionBankId) {
+    const bank = await prisma.questionBank.findUnique({
+      where: { id: exam.questionBankId },
+      include: { questions: { orderBy: { sortOrder: 'asc' } } },
+    })
+    if (bank) {
+      bankQuestions = bank.questions.map((q) => ({
+        id: q.id,
+        type: q.type as Question['type'],
+        isBonus: q.isBonus,
+        points: q.points,
+        text: q.text,
+        options: q.options ? (q.options as unknown as Option[]) : undefined,
+        gradingHint: q.gradingHint ?? undefined,
+      }))
+    }
+  }
+
+  const autoScore = calculateAutoScore(answers, bankQuestions)
   const total = calculateTotal(autoScore, null)
 
   await prisma.submission.create({

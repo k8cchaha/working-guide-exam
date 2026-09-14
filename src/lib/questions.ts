@@ -1,4 +1,4 @@
-export type QuestionType = 'single' | 'multiple' | 'short_answer'
+export type QuestionType = 'single' | 'multiple' | 'short_answer' | 'true_false'
 
 export interface Option {
   id: string

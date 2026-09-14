@@ -12,10 +12,16 @@ export interface SavedListData {
   authMode: string
   members: { name: string; password: string | null }[]
 }
+export interface BankSummary {
+  id: string
+  name: string
+  questionCount: number
+  adminUsername: string
+}
 
-interface Props { savedLists: SavedListData[] }
+interface Props { savedLists: SavedListData[]; banks: BankSummary[] }
 
-export default function CreateExamForm({ savedLists: initialLists }: Props) {
+export default function CreateExamForm({ savedLists: initialLists, banks }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState('')
@@ -33,6 +39,9 @@ export default function CreateExamForm({ savedLists: initialLists }: Props) {
   const [lists, setLists] = useState<SavedListData[]>(initialLists)
   const [selectedListId, setSelectedListId] = useState('')
   const [deletingId, setDeletingId] = useState('')
+
+  // Bank selection
+  const [selectedBankId, setSelectedBankId] = useState('')
 
   // Save-to-list state
   const [showSave, setShowSave] = useState(false)
@@ -73,7 +82,7 @@ export default function CreateExamForm({ savedLists: initialLists }: Props) {
     if (members.length === 0) { setError('請至少輸入一位成員'); return }
     setError('')
     startTransition(async () => {
-      const result = await createExamAction(passingScore, mode, members)
+      const result = await createExamAction(passingScore, mode, members, selectedBankId || undefined)
       if (result?.error) setError(result.error)
     })
   }
@@ -129,6 +138,27 @@ export default function CreateExamForm({ savedLists: initialLists }: Props) {
 
   return (
     <div className="space-y-5">
+      {/* 題庫選擇 */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">題庫</label>
+        {banks.length === 0 ? (
+          <p className="text-sm text-gray-400">尚無可用題庫，將使用預設題目。</p>
+        ) : (
+          <select
+            value={selectedBankId}
+            onChange={(e) => setSelectedBankId(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition cursor-pointer w-full"
+          >
+            <option value="">預設題目（Jira 工作指南）</option>
+            {banks.map((bank) => (
+              <option key={bank.id} value={bank.id}>
+                {bank.name}（{bank.questionCount} 題）
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+
       {/* 合格分數 */}
       <div className="flex items-center gap-4">
         <label className="text-sm font-medium text-gray-700 shrink-0">合格分數</label>

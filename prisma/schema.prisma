@@ -9,15 +9,17 @@ datasource db {
 }
 
 model Exam {
-  id            String       @id @default(cuid())
-  adminUsername String       @default("")
-  authMode      String       @default("NAME_ONLY")
-  passingScore  Int
-  status        ExamStatus   @default(ACTIVE)
-  publishedAt   DateTime?
-  createdAt     DateTime     @default(now())
-  members       Member[]
-  submissions   Submission[]
+  id             String        @id @default(cuid())
+  adminUsername  String        @default("")
+  authMode       String        @default("NAME_ONLY")
+  passingScore   Int
+  status         ExamStatus    @default(ACTIVE)
+  publishedAt    DateTime?
+  createdAt      DateTime      @default(now())
+  questionBankId String?
+  questionBank   QuestionBank? @relation(fields: [questionBankId], references: [id], onDelete: SetNull)
+  members        Member[]
+  submissions    Submission[]
 }
 
 model Member {
@@ -74,6 +76,7 @@ model QuestionBank {
   questionOrder String     @default("random")
   createdAt     DateTime   @default(now())
   questions     Question[]
+  exams         Exam[]
 
   @@unique([adminUsername, name])
 }

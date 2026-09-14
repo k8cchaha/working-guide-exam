@@ -1,16 +1,20 @@
-import { QUESTIONS } from './questions'
+import { QUESTIONS, Question } from './questions'
 
 /** answers: { questionId: string | string[] } */
-export function calculateAutoScore(answers: Record<string, string | string[]>): number {
+export function calculateAutoScore(
+  answers: Record<string, string | string[]>,
+  questions?: Question[]
+): number {
   let score = 0
+  const qs = questions ?? QUESTIONS
 
-  for (const question of QUESTIONS) {
+  for (const question of qs) {
     if (question.type === 'short_answer') continue
 
     const userAnswer = answers[question.id]
     if (!question.options) continue
 
-    if (question.type === 'single') {
+    if (question.type === 'single' || question.type === 'true_false') {
       const correct = question.options.find((o) => o.isCorrect)?.id
       if (userAnswer === correct) score += question.points
     }

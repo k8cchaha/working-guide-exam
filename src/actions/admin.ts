@@ -34,7 +34,8 @@ export async function logoutAction() {
 export async function createExamAction(
   passingScore: number,
   authMode: string,
-  members: MemberInput[]
+  members: MemberInput[],
+  bankId?: string
 ) {
   const session = await getAdminSession()
   if (!session) return { error: '未授權' }
@@ -45,6 +46,7 @@ export async function createExamAction(
       adminUsername: session.username,
       authMode,
       passingScore,
+      questionBankId: bankId || null,
       members: {
         create: members.map((m) => ({
           name: m.name.trim(),
