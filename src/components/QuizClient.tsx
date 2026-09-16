@@ -208,7 +208,7 @@ export default function QuizClient({ examId, questions, questionOrder = 'random'
                 value={(answers[q.id] as string) ?? ''}
                 onChange={(e) => setShortAnswer(q.id, e.target.value)}
                 placeholder="請在此輸入你的答案…"
-                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none transition"
+                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none transition"
               />
             )}
           </div>

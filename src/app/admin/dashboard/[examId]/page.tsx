@@ -66,6 +66,18 @@ export default async function ExamDetailPage({
     }))
   ).length
 
+  const passedCount = membersWithSubs.filter(
+    (m) => (m.submission.totalScore ?? m.submission.autoScore) >= exam.passingScore
+  ).length
+  const failedCount = membersWithSubs.length - passedCount
+  const averageScore =
+    membersWithSubs.length > 0
+      ? membersWithSubs.reduce(
+          (sum, m) => sum + (m.submission.totalScore ?? m.submission.autoScore),
+          0
+        ) / membersWithSubs.length
+      : 0
+
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white border-b px-6 py-3 flex items-center justify-between">
@@ -201,8 +213,12 @@ export default async function ExamDetailPage({
             <div className="bg-white rounded-2xl shadow-sm p-6 flex items-center justify-between">
               <div>
                 <h2 className="font-semibold text-green-600">✅ 成績已發佈</h2>
-                <p className="text-sm text-gray-500">
-                  成員在結果頁刷新後即可看到排名
+                <p className="text-sm mt-1">
+                  合格數：<strong className="text-green-600">{passedCount}</strong>
+                  <span className="mx-2 text-gray-300">|</span>
+                  不合格數：<strong className="text-red-600">{failedCount}</strong>
+                  <span className="mx-2 text-gray-300">|</span>
+                  平均分數：<strong className="text-indigo-700">{averageScore.toFixed(1)}</strong>
                 </p>
               </div>
               <Link
