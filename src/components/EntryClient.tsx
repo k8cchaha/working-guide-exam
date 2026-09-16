@@ -110,7 +110,7 @@ export default function EntryClient({ examId, members, examStatus, authMode }: P
             title={a.label}
             type="button"
             onClick={() => setSelectedAvatar(a.id)}
-            className={`text-2xl p-1 rounded-lg transition border-2 ${
+            className={`aspect-square flex items-center justify-center text-2xl leading-none rounded-lg transition border-2 ${
               selectedAvatar === a.id
                 ? 'border-indigo-500 bg-indigo-50 scale-110'
                 : 'border-transparent hover:border-gray-300'
