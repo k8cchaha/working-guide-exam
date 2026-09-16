@@ -18,6 +18,13 @@ interface ApiResponse {
   leaderboard?: LeaderboardEntry[]
 }
 
+interface WrongQuestion {
+  id: string
+  text: string
+  selected: string[]
+  correct: string[]
+}
+
 const MEDALS = ['🏆', '🥈', '🥉']
 const RANK_COLORS = [
   'from-yellow-50 to-amber-50 border-yellow-300',
@@ -29,6 +36,10 @@ export default function ResultClient({ examId }: { examId: string }) {
   const [data, setData] = useState<ApiResponse | null>(null)
   const [myMemberId, setMyMemberId] = useState('')
   const myRowRef = useRef<HTMLDivElement>(null)
+  const [showReview, setShowReview] = useState(false)
+  const [wrongQuestions, setWrongQuestions] = useState<WrongQuestion[] | null>(null)
+  const [reviewLoading, setReviewLoading] = useState(false)
+  const [reviewError, setReviewError] = useState('')
 
   useEffect(() => {
     const stored = localStorage.getItem(`exam_${examId}`)
@@ -65,6 +76,26 @@ export default function ResultClient({ examId }: { examId: string }) {
       }, 600)
     }
   }, [data?.published, myMemberId])
+
+  async function openReview() {
+    setShowReview(true)
+    if (wrongQuestions !== null) return
+    setReviewLoading(true)
+    setReviewError('')
+    try {
+      const res = await fetch(`/api/exam/${examId}/review?memberId=${myMemberId}`, { cache: 'no-store' })
+      const json = await res.json()
+      if (!res.ok) {
+        setReviewError(json.error ?? '載入失敗')
+        return
+      }
+      setWrongQuestions(json.wrong ?? [])
+    } catch {
+      setReviewError('載入失敗，請重試')
+    } finally {
+      setReviewLoading(false)
+    }
+  }
 
   if (!data) {
     return (
@@ -184,6 +215,57 @@ export default function ResultClient({ examId }: { examId: string }) {
           )
         })}
       </div>
+
+      {myMemberId && (
+        <div className="text-center mt-6">
+          <button
+            onClick={openReview}
+            className="text-sm text-indigo-600 hover:text-indigo-700 underline"
+          >
+            查看錯誤的題目
+          </button>
+        </div>
+      )}
+
+      {showReview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b shrink-0">
+              <h2 className="text-lg font-semibold text-gray-800">錯誤的題目</h2>
+              <button
+                onClick={() => setShowReview(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none px-1"
+              >
+                ×
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+              {reviewLoading && <p className="text-sm text-gray-400 text-center py-6">載入中…</p>}
+              {reviewError && <p className="text-sm text-red-500 text-center py-6">{reviewError}</p>}
+              {!reviewLoading && !reviewError && wrongQuestions?.length === 0 && (
+                <p className="text-sm text-green-600 text-center py-6">🎉 全對！沒有錯誤的題目</p>
+              )}
+              {!reviewLoading && wrongQuestions && wrongQuestions.length > 0 && (
+                <div className="space-y-4">
+                  {wrongQuestions.map((q, i) => (
+                    <div key={q.id} className="border rounded-xl p-4">
+                      <p className="text-sm font-medium text-gray-800 mb-2">
+                        {i + 1}. {q.text}
+                      </p>
+                      <p className="text-xs text-red-500 mb-1">
+                        你的答案：{q.selected.join('、')}
+                      </p>
+                      <p className="text-xs text-green-600">
+                        正確答案：{q.correct.join('、')}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes wiggle {
