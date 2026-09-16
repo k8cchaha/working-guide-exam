@@ -13,13 +13,16 @@ interface Props {
 export default function GradeForm({ submissionId, currentScore, maxScore }: Props) {
   const [score, setScore] = useState(currentScore?.toString() ?? '')
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
 
   function handleSave() {
     const n = parseInt(score, 10)
     if (isNaN(n) || n < 0 || n > maxScore) return
+    setError('')
     startTransition(async () => {
-      await gradeSubmissionAction(submissionId, n)
+      const result = await gradeSubmissionAction(submissionId, n)
+      if (result?.error) { setError(result.error); return }
       setSaved(true)
     })
   }
@@ -32,7 +35,7 @@ export default function GradeForm({ submissionId, currentScore, maxScore }: Prop
         min={0}
         max={maxScore}
         value={score}
-        onChange={(e) => { setScore(e.target.value); setSaved(false) }}
+        onChange={(e) => { setScore(e.target.value); setSaved(false); setError('') }}
         className="w-20 border border-gray-300 rounded px-2 py-1 text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
       />
       <button
@@ -43,6 +46,7 @@ export default function GradeForm({ submissionId, currentScore, maxScore }: Prop
         {isPending ? '儲存中…' : '儲存'}
       </button>
       {saved && <span className="text-green-600 text-xs">✓ 已儲存</span>}
+      {error && <span className="text-red-500 text-xs">{error}</span>}
     </div>
   )
 }

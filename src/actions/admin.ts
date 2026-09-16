@@ -10,6 +10,7 @@ import {
 } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { calculateTotal } from '@/lib/scoring'
+import { QUESTIONS } from '@/lib/questions'
 
 export type MemberInput = { name: string; password?: string }
 
@@ -67,6 +68,23 @@ export async function gradeSubmissionAction(submissionId: string, manualScore: n
 
   const submission = await prisma.submission.findUnique({ where: { id: submissionId } })
   if (!submission) return { error: '找不到作答記錄' }
+
+  const exam = await prisma.exam.findUnique({
+    where: { id: submission.examId },
+    include: {
+      questionBank: { include: { questions: { orderBy: { sortOrder: 'asc' } } } },
+    },
+  })
+  if (!exam) return { error: '找不到測驗' }
+
+  const saQuestion = exam.questionBank
+    ? exam.questionBank.questions.find((q) => q.type === 'short_answer')
+    : QUESTIONS.find((q) => q.type === 'short_answer')
+  const maxScore = saQuestion?.points ?? 0
+
+  if (!Number.isInteger(manualScore) || manualScore < 0 || manualScore > maxScore) {
+    return { error: `分數必須介於 0 到 ${maxScore} 之間` }
+  }
 
   const total = calculateTotal(submission.autoScore, manualScore)
   await prisma.submission.update({

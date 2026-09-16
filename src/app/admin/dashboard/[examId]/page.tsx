@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import { getAvatarById } from '@/lib/avatars'
-import { QUESTIONS } from '@/lib/questions'
+import { QUESTIONS, Question, Option } from '@/lib/questions'
 import { logoutAction } from '@/actions/admin'
 import { ExamStatus, Member, Submission } from '@prisma/client'
 import Link from 'next/link'
@@ -29,6 +29,7 @@ export default async function ExamDetailPage({
         include: { submission: true },
         orderBy: { name: 'asc' },
       },
+      questionBank: { include: { questions: { orderBy: { sortOrder: 'asc' } } } },
     },
   })
 
@@ -37,7 +38,19 @@ export default async function ExamDetailPage({
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
   const examUrl = `${baseUrl}/exam/${examId}`
 
-  const saQuestion = QUESTIONS.find((q) => q.id === 'SA01')!
+  const questions: Question[] = exam.questionBank
+    ? exam.questionBank.questions.map((q) => ({
+        id: q.id,
+        type: q.type as Question['type'],
+        isBonus: q.isBonus,
+        points: q.points,
+        text: q.text,
+        options: q.options ? (q.options as unknown as Option[]) : undefined,
+        gradingHint: q.gradingHint ?? undefined,
+      }))
+    : QUESTIONS
+
+  const saQuestion = questions.find((q) => q.type === 'short_answer')
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -125,25 +138,27 @@ export default async function ExamDetailPage({
                   </div>
 
                   {/* 問答題批改 */}
-                  {sub && (
+                  {sub && saQuestion && (
                     <div className="bg-gray-50 rounded-lg p-3">
                       <p className="text-xs font-medium text-gray-600 mb-1">
-                        SA01 — {saQuestion.text}
+                        {saQuestion.id} — {saQuestion.text}
                       </p>
                       <p className="text-sm text-gray-800 whitespace-pre-wrap mb-2">
-                        {(sub.answers as Record<string, string>)['SA01'] || '（未作答）'}
+                        {(sub.answers as Record<string, string>)[saQuestion.id] || '（未作答）'}
                       </p>
-                      <details className="text-xs text-gray-500 mb-2">
-                        <summary className="cursor-pointer hover:text-gray-700">查看評分參考</summary>
-                        <pre className="mt-1 whitespace-pre-wrap text-gray-600 font-sans">
-                          {saQuestion.gradingHint}
-                        </pre>
-                      </details>
+                      {saQuestion.gradingHint && (
+                        <details className="text-xs text-gray-500 mb-2">
+                          <summary className="cursor-pointer hover:text-gray-700">查看評分參考</summary>
+                          <pre className="mt-1 whitespace-pre-wrap text-gray-600 font-sans">
+                            {saQuestion.gradingHint}
+                          </pre>
+                        </details>
+                      )}
                       {exam.status !== ExamStatus.PUBLISHED && (
                         <GradeForm
                           submissionId={sub.id}
                           currentScore={sub.manualScore}
-                          maxScore={15}
+                          maxScore={saQuestion.points}
                           examId={examId}
                         />
                       )}

@@ -22,7 +22,6 @@ export default function QuizClient({ examId, questions, questionOrder = 'random'
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
-  const [showConfirm, setShowConfirm] = useState(false)
   const topRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -57,6 +56,11 @@ export default function QuizClient({ examId, questions, questionOrder = 'random'
     if (q.type === 'multiple') return !a || (a as string[]).length === 0
     return !a
   })
+
+  function scrollToFirstUnanswered() {
+    if (unanswered.length === 0) return
+    document.getElementById(`q-${unanswered[0].id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
 
   async function handleSubmit() {
     setSubmitting(true)
@@ -214,41 +218,22 @@ export default function QuizClient({ examId, questions, questionOrder = 'random'
       {/* 底部固定提交區 */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg px-4 py-4">
         <div className="max-w-2xl mx-auto">
-          {unanswered.length > 0 && !showConfirm && (
-            <p className="text-xs text-amber-600 mb-2">
-              還有 {unanswered.length} 題未作答（{unanswered.map((q) => q.id).join(', ')}）
-            </p>
+          {unanswered.length > 0 && (
+            <button
+              onClick={scrollToFirstUnanswered}
+              className="block w-full text-xs text-amber-600 hover:text-amber-700 underline mb-2 text-center"
+            >
+              尚有 {unanswered.length} 題未完成
+            </button>
           )}
           {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
           <button
-            onClick={() => {
-              if (unanswered.length > 0 && !showConfirm) {
-                setShowConfirm(true)
-                return
-              }
-              handleSubmit()
-            }}
-            disabled={submitting}
-            className={`w-full py-3 rounded-xl font-semibold text-white transition disabled:opacity-50 ${
-              showConfirm || unanswered.length === 0
-                ? 'bg-green-600 hover:bg-green-700'
-                : 'bg-indigo-600 hover:bg-indigo-700'
-            }`}
+            onClick={handleSubmit}
+            disabled={submitting || unanswered.length > 0}
+            className="w-full py-3 rounded-xl font-semibold text-white transition disabled:opacity-50 bg-green-600 hover:bg-green-700"
           >
-            {submitting
-              ? '提交中…'
-              : showConfirm
-              ? `確認提交（含 ${unanswered.length} 題未作答）`
-              : '提交答案'}
+            {submitting ? '提交中…' : '提交答案'}
           </button>
-          {showConfirm && (
-            <button
-              onClick={() => setShowConfirm(false)}
-              className="w-full mt-2 py-2 text-sm text-gray-500 hover:text-gray-700"
-            >
-              繼續作答
-            </button>
-          )}
         </div>
       </div>
     </div>

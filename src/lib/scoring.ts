@@ -36,5 +36,3 @@ export function calculateAutoScore(
 export function calculateTotal(autoScore: number, manualScore: number | null): number {
   return autoScore + (manualScore ?? 0)
 }
-
-export const MAX_BASE_SCORE = 100
