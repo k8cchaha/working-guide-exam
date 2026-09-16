@@ -2,10 +2,10 @@ import { getAdminSession } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { logoutAction } from '@/actions/admin'
-import { ExamStatus, Exam, SavedList, SavedListMember } from '@prisma/client'
-import Link from 'next/link'
+import { SavedList, SavedListMember } from '@prisma/client'
 import CreateExamForm from '@/components/CreateExamForm'
 import BankManagerPanel from '@/components/BankManagerPanel'
+import ExamList from '@/components/ExamList'
 import type { SavedListData, BankSummary } from '@/components/CreateExamForm'
 
 export default async function DashboardPage() {
@@ -79,41 +79,7 @@ export default async function DashboardPage() {
         {exams.length > 0 && (
           <section className="bg-white rounded-2xl shadow-sm p-6">
             <h2 className="text-xl font-semibold mb-4">我的測驗</h2>
-            <div className="space-y-3">
-              {exams.map((exam: Exam & { _count: { members: number; submissions: number } }) => (
-                <Link
-                  key={exam.id}
-                  href={`/admin/dashboard/${exam.id}`}
-                  className="flex items-center justify-between p-4 border rounded-xl hover:bg-gray-50 transition"
-                >
-                  <div>
-                    <p className="font-medium text-gray-800">
-                      測驗 — 合格 {exam.passingScore} 分
-                      <span className="ml-2 text-xs text-gray-400">
-                        {exam.authMode === 'NAME_PASSWORD' ? '🔑 密碼驗證' : exam.authMode === 'GOOGLE' ? '🔒 Google' : ''}
-                      </span>
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {new Date(exam.createdAt).toLocaleString('zh-TW')}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <span
-                      className={`inline-block text-xs px-2 py-1 rounded-full font-medium ${
-                        exam.status === ExamStatus.PUBLISHED
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-yellow-100 text-yellow-700'
-                      }`}
-                    >
-                      {exam.status === ExamStatus.PUBLISHED ? '已發佈' : '進行中'}
-                    </span>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {exam._count.submissions} / {exam._count.members} 人已交卷
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
+            <ExamList exams={exams} />
           </section>
         )}
       </div>

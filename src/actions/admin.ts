@@ -94,6 +94,17 @@ export async function gradeSubmissionAction(submissionId: string, manualScore: n
   return { ok: true }
 }
 
+export async function deleteExamAction(examId: string, password: string) {
+  const session = await getAdminSession()
+  if (!session) return { error: '未授權' }
+  if (!validateAdminCredentials(session.username, password)) return { error: '密碼錯誤' }
+
+  await prisma.exam.deleteMany({
+    where: { id: examId, adminUsername: session.username },
+  })
+  return { ok: true }
+}
+
 export async function publishResultsAction(examId: string) {
   const session = await getAdminSession()
   if (!session) return { error: '未授權' }
