@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ExamStatus } from '@prisma/client'
 import { deleteExamAction } from '@/actions/admin'
+import { formatTaipeiDateTime } from '@/lib/datetime'
 
 export interface ExamData {
   id: string
@@ -104,7 +105,7 @@ export default function ExamList({ exams: initial }: { exams: ExamData[] }) {
               </span>
             </p>
             <p className="text-sm text-gray-500">
-              {new Date(exam.createdAt).toLocaleString('zh-TW')}
+              {formatTaipeiDateTime(exam.createdAt)}
             </p>
           </Link>
           <div className="flex items-center gap-4 shrink-0">

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import { getAvatarById } from '@/lib/avatars'
+import { formatTaipeiDateTime } from '@/lib/datetime'
 import { QUESTIONS, Question, Option } from '@/lib/questions'
 import { computeWrongStats } from '@/lib/wrongStats'
 import { logoutAction } from '@/actions/admin'
@@ -140,7 +141,7 @@ export default async function ExamDetailPage({
                         <p className="font-medium">{member.name}</p>
                         <p className="text-xs text-gray-500">
                           {sub
-                            ? `交卷時間：${new Date(sub.submittedAt).toLocaleString('zh-TW')}`
+                            ? `交卷時間：${formatTaipeiDateTime(sub.submittedAt)}`
                             : '尚未作答'}
                         </p>
                       </div>
