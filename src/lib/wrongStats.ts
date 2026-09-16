@@ -14,6 +14,7 @@ export interface WrongStat {
   question: Question
   displayIndex: number
   wrongCount: number
+  correctOptions: Option[]
   optionBreakdown: OptionBreakdown[]
   unanswered: MemberRef[]
 }
@@ -70,8 +71,10 @@ export function computeWrongStats(
         .map((o) => ({ option: o, wrongMembers: optionWrongMembers.get(o.id) ?? [] }))
         .filter((s) => s.wrongMembers.length > 0)
 
+      const correctOptions = options.filter((o) => o.isCorrect)
+
       const displayIndex = questions.indexOf(q) + 1
-      return { question: q, displayIndex, wrongCount, optionBreakdown, unanswered }
+      return { question: q, displayIndex, wrongCount, correctOptions, optionBreakdown, unanswered }
     })
     .filter((s) => s.wrongCount > 0)
     .sort((a, b) => b.wrongCount - a.wrongCount)

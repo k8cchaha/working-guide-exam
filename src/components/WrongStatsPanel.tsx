@@ -18,6 +18,7 @@ interface WrongStat {
   question: Question
   displayIndex: number
   wrongCount: number
+  correctOptions: Option[]
   optionBreakdown: OptionBreakdown[]
   unanswered: MemberRef[]
 }
@@ -93,7 +94,7 @@ function WrongStatsPanelInner({ wrongStats }: { wrongStats: WrongStat[] }) {
         <p className="text-sm text-gray-500">這位成員全部答對了！</p>
       ) : (
         <div className="space-y-3">
-          {displayedStats.map(({ question, displayIndex, wrongCount, optionBreakdown, unanswered }) => (
+          {displayedStats.map(({ question, displayIndex, wrongCount, correctOptions, optionBreakdown, unanswered }) => (
             <details key={question.id} className="border rounded-xl p-3 group" open={!!selectedMemberId}>
               <summary className="cursor-pointer flex items-center justify-between gap-3">
                 <span className="text-sm text-gray-800">
@@ -103,6 +104,12 @@ function WrongStatsPanelInner({ wrongStats }: { wrongStats: WrongStat[] }) {
                   {wrongCount} 人答錯
                 </span>
               </summary>
+              <p className="mt-2 text-xs text-gray-500">
+                正確答案：
+                <span className="text-green-700 font-medium">
+                  {correctOptions.map((o) => o.text).join('、')}
+                </span>
+              </p>
               <div className="mt-2 pt-2 border-t space-y-2">
                 {optionBreakdown.map(({ option, wrongMembers }) => (
                   <div key={option.id} className="flex flex-wrap items-center gap-1.5">
