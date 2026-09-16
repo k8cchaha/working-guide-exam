@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import { getAvatarById } from '@/lib/avatars'
 import { QUESTIONS, Question, Option } from '@/lib/questions'
+import { computeWrongStats } from '@/lib/wrongStats'
 import { logoutAction } from '@/actions/admin'
 import { ExamStatus, Member, Submission } from '@prisma/client'
 import Link from 'next/link'
@@ -51,6 +52,19 @@ export default async function ExamDetailPage({
     : QUESTIONS
 
   const saQuestion = questions.find((q) => q.type === 'short_answer')
+
+  const membersWithSubs = exam.members.filter(
+    (m: MemberWithSubmission) => m.submission
+  ) as (MemberWithSubmission & { submission: Submission })[]
+
+  const wrongStatsCount = computeWrongStats(
+    questions,
+    membersWithSubs.map((m) => ({
+      id: m.id,
+      name: m.name,
+      answers: m.submission.answers as Record<string, string | string[]>,
+    }))
+  ).length
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -141,7 +155,7 @@ export default async function ExamDetailPage({
                   {sub && saQuestion && (
                     <div className="bg-gray-50 rounded-lg p-3">
                       <p className="text-xs font-medium text-gray-600 mb-1">
-                        {saQuestion.id} — {saQuestion.text}
+                        {saQuestion.text}
                       </p>
                       <p className="text-sm text-gray-800 whitespace-pre-wrap mb-2">
                         {(sub.answers as Record<string, string>)[saQuestion.id] || '（未作答）'}
@@ -183,12 +197,42 @@ export default async function ExamDetailPage({
 
         {/* 已發佈 */}
         {exam.status === ExamStatus.PUBLISHED && (
-          <div className="bg-white rounded-2xl shadow-sm p-4 text-center">
-            <p className="text-green-600 font-semibold">✅ 成績已發佈</p>
-            <p className="text-sm text-gray-500 mt-1">
-              成員在結果頁刷新後即可看到排名
-            </p>
-          </div>
+          <>
+            <div className="bg-white rounded-2xl shadow-sm p-6 flex items-center justify-between">
+              <div>
+                <h2 className="font-semibold text-green-600">✅ 成績已發佈</h2>
+                <p className="text-sm text-gray-500">
+                  成員在結果頁刷新後即可看到排名
+                </p>
+              </div>
+              <Link
+                href={`/exam/${examId}/result`}
+                target="_blank"
+                className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+              >
+                前往排名 ↗
+              </Link>
+            </div>
+
+            {/* 答錯狀況統計 */}
+            <div className="bg-white rounded-2xl shadow-sm p-6 flex items-center justify-between">
+              <div>
+                <h2 className="font-semibold">答錯狀況統計</h2>
+                <p className="text-sm text-gray-500">
+                  {wrongStatsCount === 0
+                    ? '🎉 所有人都答對了每一題！'
+                    : `共 ${wrongStatsCount} 題有人答錯，可篩選特定成員並分享連結給對方檢討`}
+                </p>
+              </div>
+              <Link
+                href={`/exam/${examId}/wrong-stats`}
+                target="_blank"
+                className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+              >
+                查看統計 ↗
+              </Link>
+            </div>
+          </>
         )}
       </div>
     </div>
