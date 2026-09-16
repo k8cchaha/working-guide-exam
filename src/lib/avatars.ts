@@ -15,6 +15,14 @@ export const AVATARS = [
   { id: '14', emoji: '🦄', label: '獨角獸' },
   { id: '15', emoji: '🐧', label: '企鵝' },
   { id: '16', emoji: '🦖', label: '恐龍' },
+  { id: '17', emoji: '🐳', label: '鯨魚' },
+  { id: '18', emoji: '🐙', label: '章魚' },
+  { id: '19', emoji: '🐢', label: '烏龜' },
+  { id: '20', emoji: '🐣', label: '小雞' },
+  { id: '21', emoji: '🐵', label: '猴子' },
+  { id: '22', emoji: '🎃', label: '南瓜' },
+  { id: '23', emoji: '🤖', label: '機器人' },
+  { id: '24', emoji: '🦥', label: '樹懶' },
 ]
 
 export function getAvatarById(id: string) {

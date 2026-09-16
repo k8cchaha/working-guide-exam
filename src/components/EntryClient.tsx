@@ -102,7 +102,7 @@ export default function EntryClient({ examId, members, examStatus, authMode }: P
 
   const avatarPicker = (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">選一個頭像</label>
+      <label className="block text-sm font-medium text-gray-700 mb-2">選擇頭像</label>
       <div className="grid grid-cols-8 gap-2">
         {AVATARS.map((a) => (
           <button
