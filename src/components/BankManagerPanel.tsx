@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { deleteBankAction, updateBankAction } from '@/actions/admin'
 import CreateBankModal from './CreateBankModal'
@@ -232,6 +232,10 @@ export default function BankManagerPanel({ banks: initial, currentAdmin }: Props
   const [settingsBank, setSettingsBank] = useState<BankData | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<BankData | null>(null)
   const [managingBank, setManagingBank] = useState<BankData | null>(null)
+
+  useEffect(() => {
+    setBanks(initial)
+  }, [initial])
 
   async function handleDeleteConfirm(bankId: string, password: string): Promise<string | null> {
     const result = await deleteBankAction(bankId, password)
