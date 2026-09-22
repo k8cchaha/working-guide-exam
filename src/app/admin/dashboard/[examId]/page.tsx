@@ -12,6 +12,7 @@ import Link from 'next/link'
 import QRSection from '@/components/QRSection'
 import GradeForm from '@/components/GradeForm'
 import PublishButton from '@/components/PublishButton'
+import RefreshButton from '@/components/RefreshButton'
 
 type MemberWithSubmission = Member & { submission: Submission | null }
 
@@ -127,7 +128,10 @@ export default async function ExamDetailPage({
 
         {/* 成員狀態 & 批改 */}
         <div className="bg-white rounded-2xl shadow-sm p-6">
-          <h2 className="text-lg font-semibold mb-4">成員答題狀態</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">成員答題狀態</h2>
+            <RefreshButton />
+          </div>
           <div className="space-y-4">
             {exam.members.map((member: MemberWithSubmission) => {
               const sub = member.submission
