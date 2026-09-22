@@ -19,14 +19,14 @@ export function calculateAutoScore(
       if (userAnswer === correct) score += question.points
     }
 
-    if (question.type === 'multiple') {
-      // 每個選項：選對或不選錯各得 1 分，共 5 分
+    if (question.type === 'multiple' && question.options.length > 0) {
       const selected = Array.isArray(userAnswer) ? userAnswer : []
-      for (const option of question.options) {
+      const correctJudgments = question.options.filter((option) => {
         const wasSelected = selected.includes(option.id)
-        if (option.isCorrect && wasSelected) score += 1
-        if (!option.isCorrect && !wasSelected) score += 1
-      }
+        return option.isCorrect ? wasSelected : !wasSelected
+      }).length
+      const partialScore = (correctJudgments / question.options.length) * question.points
+      score += Math.round(partialScore)
     }
   }
 

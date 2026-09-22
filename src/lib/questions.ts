@@ -320,13 +320,13 @@ export const QUESTIONS: Question[] = [
     ],
   },
 
-  // ── 複選題 2 題（每題最高 5 分，每選項 1 分）──────────────────────────
+  // ── 複選題 2 題（依各選項判斷正確比例計算部分得分）──────────────────
   {
     id: 'MC01',
     type: 'multiple',
     isBonus: false,
     points: 5,
-    text: '以下關於 Actual Story Points 的敘述，哪些是正確的？（每個選項各 1 分，請選出所有正確的）',
+    text: '以下關於 Actual Story Points 的敘述，哪些是正確的？（依選項判斷正確比例給分，請選出所有正確的）',
     options: [
       { id: 'A', text: '最小單位是 0.1', isCorrect: true },
       { id: 'B', text: '應在每張 DEV-Task 完成後立即填入', isCorrect: true },
@@ -340,7 +340,7 @@ export const QUESTIONS: Question[] = [
     type: 'multiple',
     isBonus: false,
     points: 5,
-    text: '以下哪些情況下，子單（DEV-Task）的狀態切換是「手動」進行的？（每個選項各 1 分，請選出所有正確的）',
+    text: '以下哪些情況下，子單（DEV-Task）的狀態切換是「手動」進行的？（依選項判斷正確比例給分，請選出所有正確的）',
     options: [
       { id: 'A', text: '無 MR 連動時，In Progress → In Review', isCorrect: true },
       { id: 'B', text: '無 MR 連動時，In Review → Done', isCorrect: true },
