@@ -190,7 +190,6 @@ export default async function ExamDetailPage({
                           submissionId={sub.id}
                           currentScore={sub.manualScore}
                           maxScore={saQuestion.points}
-                          examId={examId}
                         />
                       )}
                     </div>

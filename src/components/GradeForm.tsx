@@ -1,16 +1,17 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { gradeSubmissionAction } from '@/actions/admin'
 
 interface Props {
   submissionId: string
   currentScore: number | null
   maxScore: number
-  examId: string
 }
 
 export default function GradeForm({ submissionId, currentScore, maxScore }: Props) {
+  const router = useRouter()
   const [score, setScore] = useState(currentScore?.toString() ?? '')
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
@@ -24,6 +25,7 @@ export default function GradeForm({ submissionId, currentScore, maxScore }: Prop
       const result = await gradeSubmissionAction(submissionId, n)
       if (result?.error) { setError(result.error); return }
       setSaved(true)
+      router.refresh()
     })
   }
 
