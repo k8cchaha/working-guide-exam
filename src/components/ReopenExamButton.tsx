@@ -30,7 +30,7 @@ export default function ReopenExamButton({ examId }: { examId: string }) {
   return (
     <div>
       {confirmed && (
-        <p className="text-xs text-amber-700 mb-2 max-w-xs">
+        <p className="text-xs text-amber-700 mb-2 whitespace-nowrap">
           既有作答與分數會保留，排名將暫停公開，直到再次發佈成績。
         </p>
       )}
