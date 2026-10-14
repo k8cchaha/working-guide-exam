@@ -123,6 +123,11 @@ export default async function ExamDetailPage({
               <p className="text-sm font-medium text-gray-700 mb-1">測驗連結</p>
               <code className="block bg-gray-100 rounded px-3 py-2 text-xs break-all">{examUrl}</code>
             </div>
+            {exam.status === ExamStatus.PUBLISHED && (
+              <div className="pt-2">
+                <ReopenExamButton examId={examId} />
+              </div>
+            )}
           </div>
           <QRSection examUrl={examUrl} />
         </div>
@@ -226,16 +231,13 @@ export default async function ExamDetailPage({
                   平均分數：<strong className="text-indigo-700">{averageScore.toFixed(1)}</strong>
                 </p>
               </div>
-              <div className="flex flex-col-reverse sm:flex-row sm:items-start gap-3">
-                <ReopenExamButton examId={examId} />
-                <Link
-                  href={`/exam/${examId}/result`}
-                  target="_blank"
-                  className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
-                >
-                  前往排名 ↗
-                </Link>
-              </div>
+              <Link
+                href={`/exam/${examId}/result`}
+                target="_blank"
+                className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+              >
+                前往排名 ↗
+              </Link>
             </div>
 
             {/* 答錯狀況統計 */}
