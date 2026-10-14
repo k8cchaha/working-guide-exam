@@ -10,14 +10,23 @@ export default async function ExamEntryPage({
   const { examId } = await params
   const exam = await prisma.exam.findUnique({
     where: { id: examId },
-    include: { members: { orderBy: { name: 'asc' }, select: { id: true, name: true } } },
+    include: {
+      members: {
+        orderBy: { name: 'asc' },
+        select: { id: true, name: true, submission: { select: { id: true } } },
+      },
+    },
   })
   if (!exam) notFound()
 
   return (
     <EntryClient
       examId={examId}
-      members={exam.members}
+      members={exam.members.map((member) => ({
+        id: member.id,
+        name: member.name,
+        hasSubmitted: member.submission !== null,
+      }))}
       examStatus={exam.status}
       authMode={exam.authMode}
     />

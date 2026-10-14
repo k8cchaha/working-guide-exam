@@ -6,7 +6,7 @@ import { useSession, signIn } from 'next-auth/react'
 import { AVATARS } from '@/lib/avatars'
 import { startExamAction, startGoogleMemberAction } from '@/actions/exam'
 
-interface Member { id: string; name: string }
+interface Member { id: string; name: string; hasSubmitted: boolean }
 interface Props {
   examId: string
   members: Member[]
@@ -33,7 +33,12 @@ export default function EntryClient({ examId, members, examStatus, authMode }: P
   }, [examId])
 
   async function handleStart() {
-    if (!selectedMemberId || !selectedAvatar) return
+    const selectedMember = members.find((member) => member.id === selectedMemberId)
+    if (!selectedMember || selectedMember.hasSubmitted || !selectedAvatar) {
+      setSelectedMemberId('')
+      setError(selectedMember?.hasSubmitted ? '此成員已完成作答' : '')
+      return
+    }
     if (authMode === 'NAME_PASSWORD' && !password.trim()) {
       setError('請輸入密碼')
       return
@@ -231,7 +236,9 @@ export default function EntryClient({ examId, members, examStatus, authMode }: P
   }
 
   // ── NAME_ONLY / NAME_PASSWORD ─────────────────────────────────────────────────
-  const canStart = selectedMemberId && selectedAvatar && (authMode !== 'NAME_PASSWORD' || password.trim())
+  const selectedMember = members.find((member) => member.id === selectedMemberId)
+  const canStart = selectedMember && !selectedMember.hasSubmitted && selectedAvatar &&
+    (authMode !== 'NAME_PASSWORD' || password.trim())
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -250,7 +257,9 @@ export default function EntryClient({ examId, members, examStatus, authMode }: P
           >
             <option value="">— 請選擇 —</option>
             {members.map((m) => (
-              <option key={m.id} value={m.id}>{m.name}</option>
+              <option key={m.id} value={m.id} disabled={m.hasSubmitted}>
+                {m.name}{m.hasSubmitted ? '（已完成）' : ''}
+              </option>
             ))}
           </select>
         </div>
