@@ -116,6 +116,23 @@ export async function publishResultsAction(examId: string) {
   return { ok: true }
 }
 
+export async function reopenExamAction(examId: string) {
+  const session = await getAdminSession()
+  if (!session) return { error: '未授權' }
+
+  const result = await prisma.exam.updateMany({
+    where: {
+      id: examId,
+      adminUsername: session.username,
+      status: 'PUBLISHED',
+    },
+    data: { status: 'ACTIVE', publishedAt: null },
+  })
+
+  if (result.count === 0) return { error: '找不到可重新開啟的測驗' }
+  return { ok: true }
+}
+
 // ── SavedList ──────────────────────────────────────────────────────────────────
 
 export async function saveListAction(

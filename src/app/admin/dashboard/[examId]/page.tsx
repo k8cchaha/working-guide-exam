@@ -13,6 +13,7 @@ import QRSection from '@/components/QRSection'
 import GradeForm from '@/components/GradeForm'
 import PublishButton from '@/components/PublishButton'
 import RefreshButton from '@/components/RefreshButton'
+import ReopenExamButton from '@/components/ReopenExamButton'
 
 type MemberWithSubmission = Member & { submission: Submission | null }
 
@@ -214,7 +215,7 @@ export default async function ExamDetailPage({
         {/* 已發佈 */}
         {exam.status === ExamStatus.PUBLISHED && (
           <>
-            <div className="bg-white rounded-2xl shadow-sm p-6 flex items-center justify-between">
+            <div className="bg-white rounded-2xl shadow-sm p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 className="font-semibold text-green-600">✅ 成績已發佈</h2>
                 <p className="text-sm mt-1">
@@ -225,13 +226,16 @@ export default async function ExamDetailPage({
                   平均分數：<strong className="text-indigo-700">{averageScore.toFixed(1)}</strong>
                 </p>
               </div>
-              <Link
-                href={`/exam/${examId}/result`}
-                target="_blank"
-                className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
-              >
-                前往排名 ↗
-              </Link>
+              <div className="flex flex-col-reverse sm:flex-row sm:items-start gap-3">
+                <ReopenExamButton examId={examId} />
+                <Link
+                  href={`/exam/${examId}/result`}
+                  target="_blank"
+                  className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+                >
+                  前往排名 ↗
+                </Link>
+              </div>
             </div>
 
             {/* 答錯狀況統計 */}
