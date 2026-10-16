@@ -205,7 +205,7 @@ export default function CreateBankModal({ onDone, onClose }: Props) {
                 <input type="checkbox" checked={isShared}
                   onChange={(e) => setIsShared(e.target.checked)}
                   className="accent-indigo-600" />
-                🌐 開放共用給其他 Admin
+                🌐 開放共用給其他使用者
               </label>
 
               {step1Error && <p className="text-red-500 text-sm">{step1Error}</p>}

@@ -6,20 +6,23 @@ import {
   signAdminToken,
   setAdminCookie,
   clearAdminCookie,
-  getAdminSession,
+  getManagementSession,
+  validateManagementPassword,
 } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { calculateTotal } from '@/lib/scoring'
 import { QUESTIONS } from '@/lib/questions'
+import { readableBankWhere } from '@/lib/session-token'
 
 export type MemberInput = { name: string; password?: string }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
 export async function loginAction(formData: FormData) {
-  const username = formData.get('username') as string
-  const password = formData.get('password') as string
-  if (!validateAdminCredentials(username, password)) return { error: '帳號或密碼錯誤' }
+  const username = formData.get('username')
+  const password = formData.get('password')
+  if (typeof username !== 'string' || typeof password !== 'string' ||
+      !validateAdminCredentials(username, password)) return { error: '帳號或密碼錯誤' }
   const token = await signAdminToken(username)
   await setAdminCookie(token)
   redirect('/admin/dashboard')
@@ -39,13 +42,21 @@ export async function createExamAction(
   bankId?: string,
   questionOrder = 'random'
 ) {
-  const session = await getAdminSession()
+  const session = await getManagementSession()
   if (!session) return { error: '未授權' }
   if (authMode !== 'GOOGLE' && members.length === 0) return { error: '請至少輸入一位成員' }
+  if (bankId) {
+    const bank = await prisma.questionBank.findFirst({
+      where: { id: bankId, ...readableBankWhere(session.ownerKey) },
+      select: { id: true },
+    })
+    if (!bank) return { error: '題庫不存在或未開放共用' }
+  }
 
   const exam = await prisma.exam.create({
     data: {
       adminUsername: session.username,
+      ownerKey: session.ownerKey,
       authMode,
       passingScore,
       questionOrder,
@@ -63,14 +74,16 @@ export async function createExamAction(
 }
 
 export async function gradeSubmissionAction(submissionId: string, manualScore: number) {
-  const session = await getAdminSession()
+  const session = await getManagementSession()
   if (!session) return { error: '未授權' }
 
-  const submission = await prisma.submission.findUnique({ where: { id: submissionId } })
+  const submission = await prisma.submission.findFirst({
+    where: { id: submissionId, exam: { ownerKey: session.ownerKey } },
+  })
   if (!submission) return { error: '找不到作答記錄' }
 
   const exam = await prisma.exam.findUnique({
-    where: { id: submission.examId },
+    where: { id: submission.examId, ownerKey: session.ownerKey },
     include: {
       questionBank: { include: { questions: { orderBy: { sortOrder: 'asc' } } } },
     },
@@ -95,35 +108,37 @@ export async function gradeSubmissionAction(submissionId: string, manualScore: n
 }
 
 export async function deleteExamAction(examId: string, password: string) {
-  const session = await getAdminSession()
+  const session = await getManagementSession()
   if (!session) return { error: '未授權' }
-  if (!validateAdminCredentials(session.username, password)) return { error: '密碼錯誤' }
+  if (!(await validateManagementPassword(session, password))) return { error: '密碼錯誤' }
 
-  await prisma.exam.deleteMany({
-    where: { id: examId, adminUsername: session.username },
+  const result = await prisma.exam.deleteMany({
+    where: { id: examId, ownerKey: session.ownerKey },
   })
+  if (result.count === 0) return { error: '找不到測驗' }
   return { ok: true }
 }
 
 export async function publishResultsAction(examId: string) {
-  const session = await getAdminSession()
+  const session = await getManagementSession()
   if (!session) return { error: '未授權' }
 
-  await prisma.exam.update({
-    where: { id: examId },
+  const result = await prisma.exam.updateMany({
+    where: { id: examId, ownerKey: session.ownerKey },
     data: { status: 'PUBLISHED', publishedAt: new Date() },
   })
+  if (result.count === 0) return { error: '找不到測驗' }
   return { ok: true }
 }
 
 export async function reopenExamAction(examId: string) {
-  const session = await getAdminSession()
+  const session = await getManagementSession()
   if (!session) return { error: '未授權' }
 
   const result = await prisma.exam.updateMany({
     where: {
       id: examId,
-      adminUsername: session.username,
+      ownerKey: session.ownerKey,
       status: 'PUBLISHED',
     },
     data: { status: 'ACTIVE', publishedAt: null },
@@ -140,14 +155,14 @@ export async function saveListAction(
   authMode: string,
   members: MemberInput[]
 ) {
-  const session = await getAdminSession()
+  const session = await getManagementSession()
   if (!session) return { error: '未授權' }
   if (!listName.trim()) return { error: '請輸入清單名稱' }
   if (members.length === 0) return { error: '成員清單不可為空' }
 
   // Upsert: 同名清單直接覆蓋
   const existing = await prisma.savedList.findUnique({
-    where: { adminUsername_name: { adminUsername: session.username, name: listName.trim() } },
+    where: { ownerKey_name: { ownerKey: session.ownerKey, name: listName.trim() } },
   })
 
   const memberData = members.map((m) => ({
@@ -167,6 +182,7 @@ export async function saveListAction(
     saved = await prisma.savedList.create({
       data: {
         adminUsername: session.username,
+        ownerKey: session.ownerKey,
         name: listName.trim(),
         authMode,
         members: { create: memberData },
@@ -179,38 +195,40 @@ export async function saveListAction(
 }
 
 export async function deleteSavedListAction(savedListId: string) {
-  const session = await getAdminSession()
+  const session = await getManagementSession()
   if (!session) return { error: '未授權' }
 
-  await prisma.savedList.deleteMany({
-    where: { id: savedListId, adminUsername: session.username },
+  const result = await prisma.savedList.deleteMany({
+    where: { id: savedListId, ownerKey: session.ownerKey },
   })
+  if (result.count === 0) return { error: '找不到清單' }
   return { ok: true }
 }
 
 // ── QuestionBank ──────────────────────────────────────────────────────────────
 
 export async function createBankAction(name: string, isShared = false) {
-  const session = await getAdminSession()
+  const session = await getManagementSession()
   if (!session) return { error: '未授權' }
   if (!name.trim()) return { error: '請輸入題庫名稱' }
 
   const bank = await prisma.questionBank.upsert({
-    where: { adminUsername_name: { adminUsername: session.username, name: name.trim() } },
+    where: { ownerKey_name: { ownerKey: session.ownerKey, name: name.trim() } },
     update: {},
-    create: { adminUsername: session.username, name: name.trim(), isShared },
+    create: { adminUsername: session.username, ownerKey: session.ownerKey, name: name.trim(), isShared },
   })
   return { ok: true, bank }
 }
 
 export async function toggleBankSharedAction(bankId: string, isShared: boolean) {
-  const session = await getAdminSession()
+  const session = await getManagementSession()
   if (!session) return { error: '未授權' }
 
-  await prisma.questionBank.updateMany({
-    where: { id: bankId, adminUsername: session.username },
+  const result = await prisma.questionBank.updateMany({
+    where: { id: bankId, ownerKey: session.ownerKey },
     data: { isShared },
   })
+  if (result.count === 0) return { error: '題庫不存在' }
   return { ok: true }
 }
 
@@ -218,12 +236,12 @@ export async function updateBankAction(
   bankId: string,
   params: { name: string; isShared: boolean }
 ) {
-  const session = await getAdminSession()
+  const session = await getManagementSession()
   if (!session) return { error: '未授權' }
   if (!params.name.trim()) return { error: '請輸入題庫名稱' }
 
   const bank = await prisma.questionBank.findFirst({
-    where: { id: bankId, adminUsername: session.username },
+    where: { id: bankId, ownerKey: session.ownerKey },
   })
   if (!bank) return { error: '題庫不存在' }
 
@@ -240,13 +258,14 @@ export async function updateBankAction(
 }
 
 export async function deleteBankAction(bankId: string, password: string) {
-  const session = await getAdminSession()
+  const session = await getManagementSession()
   if (!session) return { error: '未授權' }
-  if (!validateAdminCredentials(session.username, password)) return { error: '密碼錯誤' }
+  if (!(await validateManagementPassword(session, password))) return { error: '密碼錯誤' }
 
-  await prisma.questionBank.deleteMany({
-    where: { id: bankId, adminUsername: session.username },
+  const result = await prisma.questionBank.deleteMany({
+    where: { id: bankId, ownerKey: session.ownerKey },
   })
+  if (result.count === 0) return { error: '題庫不存在' }
   return { ok: true }
 }
 
@@ -263,13 +282,13 @@ export async function createQuestionAction(params: {
   options?: OptionInput[]
   gradingHint?: string
 }) {
-  const session = await getAdminSession()
+  const session = await getManagementSession()
   if (!session) return { error: '未授權' }
   if (!params.text.trim()) return { error: '請輸入題目內容' }
 
-  // Verify the bank belongs to this admin
+  // Verify the bank belongs to the current account
   const bank = await prisma.questionBank.findFirst({
-    where: { id: params.bankId, adminUsername: session.username },
+    where: { id: params.bankId, ownerKey: session.ownerKey },
   })
   if (!bank) return { error: '題庫不存在' }
 
@@ -305,12 +324,12 @@ export async function updateQuestionAction(
     gradingHint?: string
   }
 ) {
-  const session = await getAdminSession()
+  const session = await getManagementSession()
   if (!session) return { error: '未授權' }
   if (!params.text.trim()) return { error: '請輸入題目內容' }
 
   const existing = await prisma.question.findFirst({
-    where: { id: questionId, bank: { adminUsername: session.username } },
+    where: { id: questionId, bank: { ownerKey: session.ownerKey } },
   })
   if (!existing) return { error: '題目不存在' }
 
@@ -329,11 +348,11 @@ export async function updateQuestionAction(
 }
 
 export async function updateQuestionOrdersAction(bankId: string, orderedIds: string[]) {
-  const session = await getAdminSession()
+  const session = await getManagementSession()
   if (!session) return { error: '未授權' }
 
   const bank = await prisma.questionBank.findFirst({
-    where: { id: bankId, adminUsername: session.username },
+    where: { id: bankId, ownerKey: session.ownerKey },
   })
   if (!bank) return { error: '題庫不存在' }
 
@@ -349,12 +368,12 @@ export async function updateQuestionOrdersAction(bankId: string, orderedIds: str
 }
 
 export async function deleteQuestionAction(questionId: string) {
-  const session = await getAdminSession()
+  const session = await getManagementSession()
   if (!session) return { error: '未授權' }
 
-  // Only delete if the question's bank belongs to this admin
-  await prisma.question.deleteMany({
-    where: { id: questionId, bank: { adminUsername: session.username } },
+  const result = await prisma.question.deleteMany({
+    where: { id: questionId, bank: { ownerKey: session.ownerKey } },
   })
+  if (result.count === 0) return { error: '題目不存在' }
   return { ok: true }
 }

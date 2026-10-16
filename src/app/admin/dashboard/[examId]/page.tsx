@@ -1,4 +1,4 @@
-import { getAdminSession } from '@/lib/auth'
+import { getManagementSession } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { notFound } from 'next/navigation'
@@ -22,12 +22,12 @@ export default async function ExamDetailPage({
 }: {
   params: Promise<{ examId: string }>
 }) {
-  const session = await getAdminSession()
+  const session = await getManagementSession()
   if (!session) redirect('/admin')
 
   const { examId } = await params
   const exam = await prisma.exam.findUnique({
-    where: { id: examId },
+    where: { id: examId, ownerKey: session.ownerKey },
     include: {
       members: {
         include: { submission: true },
@@ -91,7 +91,7 @@ export default async function ExamDetailPage({
           <h1 className="text-lg font-bold text-indigo-700">測驗管理</h1>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-500">👤 {session.username}</span>
+          <span className="text-sm text-gray-500">👤 {session.username}（{session.role === 'admin' ? 'Admin' : '使用者'}）</span>
           <form action={logoutAction}>
             <button className="text-sm text-red-500 hover:underline">登出</button>
           </form>

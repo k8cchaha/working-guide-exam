@@ -170,7 +170,7 @@ export default function CreateQuestionForm({ myBanks: initialBanks }: Props) {
               onChange={(e) => setNewBankIsShared(e.target.checked)}
               className="accent-indigo-600"
             />
-            🌐 開放共用給其他 Admin
+            🌐 開放共用給其他使用者
           </label>
         </div>
       )}

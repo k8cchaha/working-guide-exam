@@ -1,6 +1,7 @@
-import { getAdminSession } from '@/lib/auth'
+import { getManagementSession } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
+import { readableBankWhere } from '@/lib/session-token'
 import { logoutAction } from '@/actions/admin'
 import { SavedList, SavedListMember } from '@prisma/client'
 import CreateExamForm from '@/components/CreateExamForm'
@@ -9,22 +10,22 @@ import ExamList from '@/components/ExamList'
 import type { SavedListData, BankSummary } from '@/components/CreateExamForm'
 
 export default async function DashboardPage() {
-  const session = await getAdminSession()
+  const session = await getManagementSession()
   if (!session) redirect('/admin')
 
   const [exams, savedLists, banks] = await Promise.all([
     prisma.exam.findMany({
-      where: { adminUsername: session.username },
+      where: { ownerKey: session.ownerKey },
       orderBy: { createdAt: 'desc' },
       include: { _count: { select: { members: true, submissions: true } } },
     }),
     prisma.savedList.findMany({
-      where: { adminUsername: session.username },
+      where: { ownerKey: session.ownerKey },
       orderBy: { createdAt: 'desc' },
       include: { members: { select: { name: true, password: true } } },
     }),
     prisma.questionBank.findMany({
-      where: { OR: [{ adminUsername: session.username }, { isShared: true }] },
+      where: readableBankWhere(session.ownerKey),
       orderBy: { createdAt: 'desc' },
       include: { questions: { orderBy: { sortOrder: 'asc' } } },
     }),
@@ -51,7 +52,7 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white border-b px-6 py-3 flex items-center justify-between">
-        <h1 className="text-lg font-bold text-indigo-700">測驗系統｜Admin</h1>
+        <h1 className="text-lg font-bold text-indigo-700">測驗系統｜{session.role === 'admin' ? 'Admin' : '使用者'}</h1>
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-500">👤 {session.username}</span>
           <form action={logoutAction}>
@@ -71,7 +72,7 @@ export default async function DashboardPage() {
 
           <section className="bg-white rounded-2xl shadow-sm p-6">
             <h2 className="text-xl font-semibold mb-4">題庫管理</h2>
-            <BankManagerPanel banks={banks} currentAdmin={session.username} />
+            <BankManagerPanel banks={banks} currentOwnerKey={session.ownerKey} />
           </section>
         </div>
 

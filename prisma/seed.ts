@@ -8,10 +8,11 @@ async function main() {
   const BANK_NAME = 'Jira 工作指南'
 
   const bank = await prisma.questionBank.upsert({
-    where: { adminUsername_name: { adminUsername: ADMIN, name: BANK_NAME } },
+    where: { ownerKey_name: { ownerKey: `admin:${ADMIN}`, name: BANK_NAME } },
     update: {},
     create: {
       adminUsername: ADMIN,
+      ownerKey: `admin:${ADMIN}`,
       name: BANK_NAME,
       isShared: false,
     },

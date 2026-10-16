@@ -8,9 +8,17 @@ datasource db {
   directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
 model Exam {
   id             String        @id @default(cuid())
   adminUsername  String        @default("")
+  ownerKey       String
   authMode       String        @default("NAME_ONLY")
   passingScore   Int
   questionOrder  String        @default("random")
@@ -21,6 +29,8 @@ model Exam {
   questionBank   QuestionBank? @relation(fields: [questionBankId], references: [id], onDelete: SetNull)
   members        Member[]
   submissions    Submission[]
+
+  @@index([ownerKey])
 }
 
 model Member {
@@ -53,12 +63,13 @@ model Submission {
 model SavedList {
   id            String            @id @default(cuid())
   adminUsername String
+  ownerKey      String
   name          String
   authMode      String            @default("NAME_ONLY")
   createdAt     DateTime          @default(now())
   members       SavedListMember[]
 
-  @@unique([adminUsername, name])
+  @@unique([ownerKey, name])
 }
 
 model SavedListMember {
@@ -74,13 +85,14 @@ model SavedListMember {
 model QuestionBank {
   id            String     @id @default(cuid())
   adminUsername String
+  ownerKey      String
   name          String
   isShared      Boolean    @default(false)
   createdAt     DateTime   @default(now())
   questions     Question[]
   exams         Exam[]
 
-  @@unique([adminUsername, name])
+  @@unique([ownerKey, name])
 }
 
 model Question {

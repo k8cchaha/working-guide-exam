@@ -126,7 +126,8 @@ export default function CreateExamForm({ savedLists: initialLists, banks }: Prop
 
   async function handleDeleteList(id: string) {
     setDeletingId(id)
-    await deleteSavedListAction(id)
+    const result = await deleteSavedListAction(id)
+    if (result.error) { setError(result.error); setDeletingId(''); return }
     setLists((prev) => prev.filter((l) => l.id !== id))
     setDeletingId('')
     router.refresh()
