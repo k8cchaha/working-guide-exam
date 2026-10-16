@@ -47,7 +47,7 @@ export async function createExamAction(
   if (authMode !== 'GOOGLE' && members.length === 0) return { error: '請至少輸入一位成員' }
   if (bankId) {
     const bank = await prisma.questionBank.findFirst({
-      where: { id: bankId, ...readableBankWhere(session.ownerKey) },
+      where: { id: bankId, ...readableBankWhere(session.ownerKey, session.role) },
       select: { id: true },
     })
     if (!bank) return { error: '題庫不存在或未開放共用' }

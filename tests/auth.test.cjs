@@ -136,12 +136,17 @@ test('production sessions fail closed without a configured secret', async () => 
   }
 })
 
-test('ownership separates roles, uses immutable user IDs, and allows shared reads', () => {
+test('ownership separates roles, uses immutable user IDs, and scopes shared reads to the same role', () => {
   const admin = getOwnerKey({ role: 'admin', username: 'alice' })
   const user = getOwnerKey({ role: 'user', username: 'alice', sub: 'immutable-id' })
   assert.notEqual(admin, user)
   assert.notEqual(user, getOwnerKey({ role: 'admin', username: 'user:immutable-id' }))
   assert.equal(user, getOwnerKey({ role: 'user', username: 'renamed', sub: 'immutable-id' }))
   assert.notEqual(user, getOwnerKey({ role: 'user', username: 'alice', sub: 'another-id' }))
-  assert.deepEqual(readableBankWhere(user), { OR: [{ ownerKey: user }, { isShared: true }] })
+  assert.deepEqual(readableBankWhere(user, 'user'), {
+    OR: [{ ownerKey: user }, { isShared: true, ownerKey: { startsWith: 'user:' } }],
+  })
+  assert.deepEqual(readableBankWhere(admin, 'admin'), {
+    OR: [{ ownerKey: admin }, { isShared: true, ownerKey: { startsWith: 'admin:' } }],
+  })
 })

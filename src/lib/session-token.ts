@@ -43,6 +43,6 @@ export function getOwnerKey(session: ManagementToken): string {
   return session.role === 'admin' ? `admin:${session.username}` : `user:${session.sub}`
 }
 
-export function readableBankWhere(ownerKey: string) {
-  return { OR: [{ ownerKey }, { isShared: true }] }
+export function readableBankWhere(ownerKey: string, role: ManagementToken['role']) {
+  return { OR: [{ ownerKey }, { isShared: true, ownerKey: { startsWith: `${role}:` } }] }
 }

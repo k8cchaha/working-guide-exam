@@ -25,7 +25,7 @@ export default async function DashboardPage() {
       include: { members: { select: { name: true, password: true } } },
     }),
     prisma.questionBank.findMany({
-      where: readableBankWhere(session.ownerKey),
+      where: readableBankWhere(session.ownerKey, session.role),
       orderBy: { createdAt: 'desc' },
       include: { questions: { orderBy: { sortOrder: 'asc' } } },
     }),

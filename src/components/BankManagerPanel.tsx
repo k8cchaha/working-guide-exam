@@ -86,7 +86,7 @@ function BankSettingsModal({
           <label className="flex items-center gap-2 text-sm text-gray-700 select-none">
             <input type="checkbox" checked={isShared} onChange={(e) => setIsShared(e.target.checked)}
               className="accent-indigo-600" />
-            🌐 開放共用給其他使用者
+            🌐 僅共用給相同身分的其他帳號
           </label>
 
           {error && <p className="text-red-500 text-sm">{error}</p>}

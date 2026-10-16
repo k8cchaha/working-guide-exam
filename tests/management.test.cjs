@@ -72,6 +72,9 @@ function matches(row, where) {
   return !!row && Object.entries(where).every(([key, value]) => {
     if (key === 'OR') return value.some((clause) => matches(row, clause))
     if (key === 'ownerKey_name') return matches(row, value)
+    if (value !== null && typeof value === 'object' && 'startsWith' in value) {
+      return typeof row[key] === 'string' && row[key].startsWith(value.startsWith)
+    }
     return value !== null && typeof value === 'object'
       ? matches(row[key], value)
       : row[key] === value
@@ -206,18 +209,35 @@ test('creating an exam cannot use another account\'s private bank', async () => 
     const h = harness({ db: { 'questionBank.findFirst': lookup({ id: 'bank', ownerKey, isShared: false }) } })
     assert.deepEqual(await h.actions.createExamAction(60, 'GOOGLE', [], 'bank'), { error: '題庫不存在或未開放共用' })
     assert.deepEqual(h.query('questionBank.findFirst'), {
-      where: { id: 'bank', OR: [{ ownerKey: USER.ownerKey }, { isShared: true }] }, select: { id: true },
+      where: { id: 'bank', OR: [{ ownerKey: USER.ownerKey }, { isShared: true, ownerKey: { startsWith: 'user:' } }] }, select: { id: true },
     })
     called(h, 'questionBank.findFirst')
   }
 })
 
 for (const session of [USER, ADMIN]) {
-  test(`exam creation for ${session.role} allows owned/private and foreign/shared banks, storing identity separately`, async () => {
+  test(`exam creation for ${session.role} rejects shared banks from the other role`, async () => {
+    const otherRole = session.role === 'admin' ? 'user' : 'admin'
+    for (const ownerKey of [`${otherRole}:another-id`, `${otherRole}:${session.ownerKey}`]) {
+      const h = harness({ session, db: {
+        'questionBank.findFirst': lookup({ id: 'bank', ownerKey, isShared: true }),
+      } })
+      assert.deepEqual(await h.actions.createExamAction(60, 'GOOGLE', [], 'bank'), {
+        error: '題庫不存在或未開放共用',
+      })
+      assert.deepEqual(h.query('questionBank.findFirst').where, {
+        id: 'bank', OR: [{ ownerKey: session.ownerKey }, { isShared: true, ownerKey: { startsWith: `${session.role}:` } }],
+      })
+      called(h, 'questionBank.findFirst')
+    }
+  })
+
+  test(`exam creation for ${session.role} allows owned/private and same-role shared banks, storing identity separately`, async () => {
     assert.equal(session.ownerKey, getOwnerKey(session))
     for (const bank of [
       { id: 'bank', ownerKey: session.ownerKey, isShared: false },
-      { id: 'bank', ownerKey: 'user:another-id', isShared: true },
+      { id: 'bank', ownerKey: session.ownerKey, isShared: true },
+      { id: 'bank', ownerKey: `${session.role}:another-id`, isShared: true },
     ]) {
       const h = harness({ session, db: {
         'questionBank.findFirst': lookup(bank),
@@ -227,7 +247,7 @@ for (const session of [USER, ADMIN]) {
         { name: ' Member ', password: ' secret ' }, { name: ' Guest ' },
       ], bank.id, 'fixed'), (error) => error.url === '/admin/dashboard/new-exam')
       assert.deepEqual(h.query('questionBank.findFirst').where, {
-        id: bank.id, OR: [{ ownerKey: session.ownerKey }, { isShared: true }],
+        id: bank.id, OR: [{ ownerKey: session.ownerKey }, { isShared: true, ownerKey: { startsWith: `${session.role}:` } }],
       })
       assert.deepEqual(h.query('exam.create').data, {
         adminUsername: session.username, ownerKey: session.ownerKey,
