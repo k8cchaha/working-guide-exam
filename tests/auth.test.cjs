@@ -31,9 +31,12 @@ test('username normalization and credential limits are consistent', () => {
   for (const name of ['ab', 'a'.repeat(33), 'has space', '使用者', 'alice@host']) {
     assert.match(validateUserInput(name, 'password123'), /帳號/)
   }
-  assert.match(validateUserInput('alice', 'short'), /密碼/)
-  assert.match(validateUserInput('alice', 'p'.repeat(129)), /密碼/)
-  assert.equal(validateUserInput('alice', 'p'.repeat(128)), null)
+  for (const length of [0, 3, 17, 128]) {
+    assert.equal(validateUserInput('alice', 'p'.repeat(length)), '密碼需為 4–16 個字元')
+  }
+  for (const length of [4, 5, 16]) {
+    assert.equal(validateUserInput('alice', 'p'.repeat(length)), null)
+  }
 })
 
 test('scrypt uses different salts, preserves spaces, and rejects malformed hashes', async () => {

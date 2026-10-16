@@ -6,6 +6,7 @@ import { isAdminUsername, setUserCookie } from '@/lib/auth'
 import {
   normalizeUsername,
   validateUserInput,
+  validateUsername,
   registerAccount,
   authenticateAccount,
   DUPLICATE_USERNAME_ERROR,
@@ -41,7 +42,8 @@ export async function registerUserAction(_prev: AuthState, formData: FormData): 
 
 export async function loginUserAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const credentials = readCredentials(formData)
-  if (!credentials || validateUserInput(credentials.username, credentials.password)) {
+  if (!credentials || validateUsername(credentials.username) ||
+      !credentials.password || credentials.password.length > 128) {
     return { error: '帳號或密碼錯誤' }
   }
 

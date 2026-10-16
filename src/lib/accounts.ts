@@ -6,11 +6,17 @@ export function normalizeUsername(username: string): string {
   return username.trim().toLowerCase()
 }
 
-export function validateUserInput(username: string, password: string): string | null {
+export function validateUsername(username: string): string | null {
   if (!/^[a-z0-9_.-]{3,32}$/.test(username)) {
     return '帳號需為 3–32 個英數字、底線、點或連字號'
   }
-  if (password.length < 8 || password.length > 128) return '密碼需為 8–128 個字元'
+  return null
+}
+
+export function validateUserInput(username: string, password: string): string | null {
+  const error = validateUsername(username)
+  if (error) return error
+  if (password.length < 4 || password.length > 16) return '密碼需為 4–16 個字元'
   return null
 }
 

@@ -49,15 +49,15 @@ export default function UserAuthForm({ mode }: UserAuthFormProps) {
           name="password"
           type="password"
           autoComplete={isRegistration ? 'new-password' : 'current-password'}
-          minLength={8}
-          maxLength={128}
+          minLength={isRegistration ? 4 : undefined}
+          maxLength={isRegistration ? 16 : 128}
           aria-describedby={isRegistration ? 'user-password-help' : undefined}
           required
           className="w-full border border-gray-300 rounded-lg px-3 py-2 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
         />
         {isRegistration && (
           <p id="user-password-help" className="mt-1 text-xs text-gray-500">
-            8–128 個字元，區分大小寫，空白也算密碼的一部分。
+            4–16 個字元，區分大小寫，空白也算密碼的一部分。
           </p>
         )}
       </div>
