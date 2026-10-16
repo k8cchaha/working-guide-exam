@@ -21,6 +21,7 @@ export interface QuestionData {
 export interface BankData {
   id: string
   adminUsername: string
+  ownerKey: string
   name: string
   isShared: boolean
   createdAt: Date
@@ -29,7 +30,7 @@ export interface BankData {
 
 interface Props {
   banks: BankData[]
-  currentAdmin: string
+  currentOwnerKey: string
 }
 
 const TYPE_LABEL: Record<string, string> = {
@@ -85,7 +86,7 @@ function BankSettingsModal({
           <label className="flex items-center gap-2 text-sm text-gray-700 select-none">
             <input type="checkbox" checked={isShared} onChange={(e) => setIsShared(e.target.checked)}
               className="accent-indigo-600" />
-            🌐 開放共用給其他 Admin
+            🌐 開放共用給其他使用者
           </label>
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -225,7 +226,7 @@ function BankCard({
 
 // ── Panel ─────────────────────────────────────────────────────────────────────
 
-export default function BankManagerPanel({ banks: initial, currentAdmin }: Props) {
+export default function BankManagerPanel({ banks: initial, currentOwnerKey }: Props) {
   const router = useRouter()
   const [banks, setBanks] = useState<BankData[]>(initial)
   const [createOpen, setCreateOpen] = useState(false)
@@ -264,8 +265,8 @@ export default function BankManagerPanel({ banks: initial, currentAdmin }: Props
     router.refresh()
   }
 
-  const myBanks = banks.filter((b) => b.adminUsername === currentAdmin)
-  const sharedBanks = banks.filter((b) => b.adminUsername !== currentAdmin)
+  const myBanks = banks.filter((b) => b.ownerKey === currentOwnerKey)
+  const sharedBanks = banks.filter((b) => b.ownerKey !== currentOwnerKey)
 
   return (
     <div className="space-y-4">
@@ -332,7 +333,7 @@ export default function BankManagerPanel({ banks: initial, currentAdmin }: Props
       {managingBank && (
         <ManageQuestionsModal
           bank={managingBank}
-          readOnly={managingBank.adminUsername !== currentAdmin}
+          readOnly={managingBank.ownerKey !== currentOwnerKey}
           onClose={handleManageClose}
         />
       )}
